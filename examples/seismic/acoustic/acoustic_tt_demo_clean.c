@@ -353,8 +353,8 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
   gettimeofday(&end_section1, NULL);
   timers->section1 += (double)(end_section1.tv_sec - start_section1.tv_sec) + (double)(end_section1.tv_usec - start_section1.tv_usec) / 1000000;
 
-  x0_blk0_size = 128;
-  y0_blk0_size = 128; // to fix as 8/16 etc
+  x0_blk0_size = 32;
+  y0_blk0_size = 32; // to fix as 8/16 etc
   int sf = 4;
   int t_blk_size = 300002;
 
@@ -405,7 +405,7 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
     //printf(" Change of xblock \n");
     for (int y0_blk0 = y_m; y0_blk0 <= (y_M + sf * (time_M - time_m)); y0_blk0 += y0_blk0_size + 1)
     {
-        //printf("----y0_blk0 loop from y0_blk0 = %d to %d \n", y_m, (y_M + sf * (time_M - time_m)));
+      //printf("----y0_blk0 loop from y0_blk0 = %d to %d \n", y_m, (y_M + sf * (time_M - time_m)));
       for (int time = t_blk, t0 = (time) % (3), t1 = (time + 1) % (3), t2 = (time + 2) % (3); time <= 1 + min(t_blk + t_blk_size, sf * (time_M - time_m)); time += sf, t0 = (time) % (3), t1 = (time + 1) % (3), t2 = (time + 2) % (3))
       {
         //printf("------t loop from t_blk = %d to %d \n", t_blk , 1 + min(t_blk + t_blk_size, sf * (time_M - time_m)));
@@ -416,27 +416,34 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
         //printf("New T time= %d : %d \n", t_blk, min(t_blk + t_blk_size, sf * (time_M - time_m)));
         //printf("--x loop from x = %d to %d \n", max((x_m + time), x0_blk0), min((x_M + time), (x0_blk0 + x0_blk0_size)));
         //printf("----y loop from y = %d to %d \n", max((y_m + time), y0_blk0), min((y_M + time), (y0_blk0 + y0_blk0_size)));
-        #pragma omp parallel for collapse(2) schedule(dynamic)
-        for (int x = max((x_m + time), x0_blk0); x <= min((x_M + time), (x0_blk0 + x0_blk0_size)); x++)
+
+#pragma omp parallel for collapse(2)
+        for (int xb = max((x_m + time), x0_blk0); xb <= min((x_M + time), (x0_blk0 + x0_blk0_size)); xb+=8)
         {
-          for (int y = max((y_m + time), y0_blk0); y <= min((y_M + time), (y0_blk0 + y0_blk0_size )); y++)
+          for (int yb = max((y_m + time), y0_blk0); yb <= min((y_M + time), (y0_blk0 + y0_blk0_size)); yb+=8)
           {
-            //printf("time = %d , [x, y] = [%d, %d] \n", tw, x - time, y - time);
+            for (int x = xb; x <= min(min((x_M + time), (x0_blk0 + x0_blk0_size)), (xb + 8)); x++)
+            {
+              for (int y = yb; y <= min(min((y_M + time), (y0_blk0 + y0_blk0_size)), (yb + 8)); y++)
+              {
+                //printf("time = %d , [x, y] = [%d, %d] \n", tw, x - time, y - time);
 #pragma omp simd aligned(u, vp : 32)
-            for (int z = z_m; z <= z_M; z += 1)
-            {
-              u[t1][x - time + 4][y - time + 4][z + 4] = (vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4]) * ((dt * dt) * (-3.70370379e-4F * (u[t0][x - time + 2][y - time + 4][z + 4] + u[t0][x - time + 4][y - time + 2][z + 4] + u[t0][x - time + 4][y - time + 4][z + 2] + u[t0][x - time + 4][y - time + 4][z + 6] + u[t0][x - time + 4][y - time + 6][z + 4] + u[t0][x - time + 6][y - time + 4][z + 4]) + 5.92592607e-3F * (u[t0][x - time + 3][y - time + 4][z + 4] + u[t0][x - time + 4][y - time + 3][z + 4] + u[t0][x - time + 4][y - time + 4][z + 3] + u[t0][x - time + 4][y - time + 4][z + 5] + u[t0][x - time + 4][y - time + 5][z + 4] + u[t0][x - time + 5][y - time + 4][z + 4]) - 3.33333341e-2F * u[t0][x - time + 4][y - time + 4][z + 4]) + (2 * u[t0][x - time + 4][y - time + 4][z + 4] - u[t2][x - time + 4][y - time + 4][z + 4]) / ((vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4])));
-            }
+                for (int z = z_m; z <= z_M; z += 1)
+                {
+                  u[t1][x - time + 4][y - time + 4][z + 4] = (vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4]) * ((dt * dt) * (-3.70370379e-4F * (u[t0][x - time + 2][y - time + 4][z + 4] + u[t0][x - time + 4][y - time + 2][z + 4] + u[t0][x - time + 4][y - time + 4][z + 2] + u[t0][x - time + 4][y - time + 4][z + 6] + u[t0][x - time + 4][y - time + 6][z + 4] + u[t0][x - time + 6][y - time + 4][z + 4]) + 5.92592607e-3F * (u[t0][x - time + 3][y - time + 4][z + 4] + u[t0][x - time + 4][y - time + 3][z + 4] + u[t0][x - time + 4][y - time + 4][z + 3] + u[t0][x - time + 4][y - time + 4][z + 5] + u[t0][x - time + 4][y - time + 5][z + 4] + u[t0][x - time + 5][y - time + 4][z + 4]) - 3.33333341e-2F * u[t0][x - time + 4][y - time + 4][z + 4]) + (2 * u[t0][x - time + 4][y - time + 4][z + 4] - u[t2][x - time + 4][y - time + 4][z + 4]) / ((vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4])));
+                }
 #pragma omp simd aligned(u : 32)
-            for (int spzi = 0; spzi < sparse_source_mask_NNZ[x + 4 - time][y + 4 - time]; spzi++) // Inner block loop
-            {
-              //printf("\n Sparse index of z : var spzi is %d ", spzi);
+                for (int spzi = 0; spzi < sparse_source_mask_NNZ[x + 4 - time][y + 4 - time]; spzi++) // Inner block loop
+                {
+                  //printf("\n Sparse index of z : var spzi is %d ", spzi);
 
-              int zind = sparse_source_mask[x + 4 - time][y + 4 - time][spzi];
-              //printf("\n Dense z index zind is : %d", sparse_source_mask[x + 4 - time][y + 4 - time][spzi]);
+                  int zind = sparse_source_mask[x + 4 - time][y + 4 - time][spzi];
+                  //printf("\n Dense z index zind is : %d", sparse_source_mask[x + 4 - time][y + 4 - time][spzi]);
 
-              u[t1][x + 4 - time][y + 4 - time][zind] += source_mask[x + 4 - time][y + 4 - time][zind] * save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1];
-              //printf("\n Source injection at grid[%d][%d][%d] with value src = %f, ", x + 4 - time, y + 4 - time, zind, save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1]);
+                  u[t1][x + 4 - time][y + 4 - time][zind] += source_mask[x + 4 - time][y + 4 - time][zind] * save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1];
+                  //printf("\n Source injection at grid[%d][%d][%d] with value src = %f, ", x + 4 - time, y + 4 - time, zind, save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1]);
+                }
+              }
             }
           }
         }
