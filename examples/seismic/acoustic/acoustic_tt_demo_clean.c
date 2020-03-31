@@ -353,15 +353,16 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
   gettimeofday(&end_section1, NULL);
   timers->section1 += (double)(end_section1.tv_sec - start_section1.tv_sec) + (double)(end_section1.tv_usec - start_section1.tv_usec) / 1000000;
 
-  x0_blk0_size = 64;
-  y0_blk0_size = 64; // to fix as 8/16 etc
+  x0_blk0_size = 32;
+  y0_blk0_size = 32; // to fix as 8/16 etc
   int sf = 4;
-  int t_blk_size = 30000;
-
+  //int t_blk_size = time_M - time_m ;
+  int t_blk_size = 20*(time_M - time_m);
   //printf("Global time loop to timesteps = %d \n", time_M - time_m +1 );
-  for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += t_blk_size) // for each t block
+  for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += sf*t_blk_size) // for each t block
   //int t_blk = time_m;
   {
+    //printf("t_blk = %d \n", t_blk);
     struct timeval start_section0, end_section0;
     gettimeofday(&start_section0, NULL);
     /* Begin section0 */
@@ -371,13 +372,6 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
     bf0(dt, u_vec, vp_vec, t_blk, t_blk_size, x0_blk0_size, y_M, y_m, y0_blk0_size, z_M, z_m, x_M, x_m, y_M, y_m, sf, time_M, time_m, sparse_source_mask_NNZ, sparse_source_mask, source_mask, source_id, save_src);
     //printf("--- bf1  --- \n");
 
-    //bf0(dt, u_vec, vp_vec, t_blk, t_blk_size, x_M - (x_M - x_m + 1) % (x0_blk0_size), x_m, x0_blk0_size, y_M, y_M - (y_M - y_m + 1) % (y0_blk0_size) + 1, (y_M - y_m + 1) % (y0_blk0_size), z_M, z_m, x_M, x_m, y_M, y_m, sf, time_M);
-    //printf("--- bf2  --- \n");
-
-    //bf0(dt, u_vec, vp_vec, t_blk, t_blk_size, x_M, x_M - (x_M - x_m + 1) % (x0_blk0_size) + 1, (x_M - x_m + 1) % (x0_blk0_size), y_M - (y_M - y_m + 1) % (y0_blk0_size), y_m, y0_blk0_size, z_M, z_m, x_M, x_m, y_M, y_m, sf, time_M);
-    //printf("--- bf3  --- \n");
-
-    //bf0(dt, u_vec, vp_vec, t_blk, t_blk_size, x_M, x_M - (x_M - x_m + 1) % (x0_blk0_size) + 1, (x_M - x_m + 1) % (x0_blk0_size), y_M, y_M - (y_M - y_m + 1) % (y0_blk0_size) + 1, (y_M - y_m + 1) % (y0_blk0_size), z_M, z_m, x_M, x_m, y_M, y_m, sf, time_M);
     /* End section0 */
     gettimeofday(&end_section0, NULL);
     timers->section0 += (double)(end_section0.tv_sec - start_section0.tv_sec) + (double)(end_section0.tv_usec - start_section0.tv_usec) / 1000000;
@@ -422,11 +416,11 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
         {
           for (int yb = max((y_m + time), y0_blk0); yb <= min((y_M + time), (y0_blk0 + y0_blk0_size)); yb+=8)
           {
-            for (int x = xb; x <= min(min((x_M + time), (x0_blk0 + x0_blk0_size)), (xb + 8)); x++)
+            for (int x = xb; x <= min(min((x_M + time), (x0_blk0 + x0_blk0_size)), (xb + 8-1)); x++)
             {
-              for (int y = yb; y <= min(min((y_M + time), (y0_blk0 + y0_blk0_size)), (yb + 8)); y++)
+              for (int y = yb; y <= min(min((y_M + time), (y0_blk0 + y0_blk0_size)), (yb + 8-1)); y++)
               {
-                //printf("time = %d , [x, y] = [%d, %d] \n", tw, x - time, y - time);
+               // printf("time = %d , [x, y] = [%d, %d] \n", tw, x - time, y - time);
 #pragma omp simd aligned(u, vp : 32)
                 for (int z = z_m; z <= z_M; z += 1)
                 {
