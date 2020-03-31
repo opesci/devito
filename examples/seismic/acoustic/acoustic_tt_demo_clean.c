@@ -353,10 +353,10 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
   gettimeofday(&end_section1, NULL);
   timers->section1 += (double)(end_section1.tv_sec - start_section1.tv_sec) + (double)(end_section1.tv_usec - start_section1.tv_usec) / 1000000;
 
-  x0_blk0_size = 32;
-  y0_blk0_size = 32; // to fix as 8/16 etc
+  x0_blk0_size = 64;
+  y0_blk0_size = 64; // to fix as 8/16 etc
   int sf = 4;
-  int t_blk_size = 300002;
+  int t_blk_size = 30000;
 
   //printf("Global time loop to timesteps = %d \n", time_M - time_m +1 );
   for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += t_blk_size) // for each t block
@@ -417,7 +417,7 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
         //printf("--x loop from x = %d to %d \n", max((x_m + time), x0_blk0), min((x_M + time), (x0_blk0 + x0_blk0_size)));
         //printf("----y loop from y = %d to %d \n", max((y_m + time), y0_blk0), min((y_M + time), (y0_blk0 + y0_blk0_size)));
 
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) schedule(dynamic,1)
         for (int xb = max((x_m + time), x0_blk0); xb <= min((x_M + time), (x0_blk0 + x0_blk0_size)); xb+=8)
         {
           for (int yb = max((y_m + time), y0_blk0); yb <= min((y_M + time), (y0_blk0 + y0_blk0_size)); yb+=8)
