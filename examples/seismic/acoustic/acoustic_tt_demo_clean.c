@@ -353,8 +353,8 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
   gettimeofday(&end_section1, NULL);
   timers->section1 += (double)(end_section1.tv_sec - start_section1.tv_sec) + (double)(end_section1.tv_usec - start_section1.tv_usec) / 1000000;
 
-  x0_blk0_size = 32;
-  y0_blk0_size = 32; // to fix as 8/16 etc
+  x0_blk0_size = 256;
+  y0_blk0_size = 256; // to fix as 8/16 etc
   int sf = 4;
   //int t_blk_size = time_M - time_m ;
   int t_blk_size = 20*(time_M - time_m);
@@ -393,7 +393,8 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
 
   //printf("From x: %d to %d \n", x_m, (x_M + sf * (time_M - time_m)));
   //printf("From y: %d to %d \n", y_m, (y_M + sf * (time_M - time_m)));
-
+  int sbx = 24;
+  int sby = 16;
   for (int x0_blk0 = x_m; x0_blk0 <= (x_M + sf * (time_M - time_m)); x0_blk0 += x0_blk0_size + 1)
   {
     //printf(" Change of xblock \n");
@@ -412,13 +413,13 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
         //printf("----y loop from y = %d to %d \n", max((y_m + time), y0_blk0), min((y_M + time), (y0_blk0 + y0_blk0_size)));
 
 #pragma omp parallel for collapse(2) schedule(dynamic,1)
-        for (int xb = max((x_m + time), x0_blk0); xb <= min((x_M + time), (x0_blk0 + x0_blk0_size)); xb+=8)
+        for (int xb = max((x_m + time), x0_blk0); xb <= min((x_M + time), (x0_blk0 + x0_blk0_size)); xb+=sbx)
         {
-          for (int yb = max((y_m + time), y0_blk0); yb <= min((y_M + time), (y0_blk0 + y0_blk0_size)); yb+=8)
+          for (int yb = max((y_m + time), y0_blk0); yb <= min((y_M + time), (y0_blk0 + y0_blk0_size)); yb+=sby)
           {
-            for (int x = xb; x <= min(min((x_M + time), (x0_blk0 + x0_blk0_size)), (xb + 8-1)); x++)
+            for (int x = xb; x <= min(min((x_M + time), (x0_blk0 + x0_blk0_size)), (xb + sbx-1)); x++)
             {
-              for (int y = yb; y <= min(min((y_M + time), (y0_blk0 + y0_blk0_size)), (yb + 8-1)); y++)
+              for (int y = yb; y <= min(min((y_M + time), (y0_blk0 + y0_blk0_size)), (yb + sby-1)); y++)
               {
                // printf("time = %d , [x, y] = [%d, %d] \n", tw, x - time, y - time);
 #pragma omp simd aligned(u, vp : 32)
