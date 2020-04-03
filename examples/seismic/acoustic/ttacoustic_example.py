@@ -38,7 +38,7 @@ def run(shape=(50, 50, 50), spacing=(20.0, 20.0, 20.0), tn=100.0,
     # Define receiver geometry (spread across x, just below surface)
     rec, u, summary = solver.forward(save=save, autotune=autotune)
     
-    print(norm(u))
+    # print(norm(u))
 
     if preset == 'constant':
         # With  a new m as Constant
