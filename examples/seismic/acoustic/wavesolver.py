@@ -98,7 +98,9 @@ class AcousticWaveSolver(object):
         # Source term is read-only, so re-use the default
         src = src or self.geometry.src
         # Create a new receiver object to store the result
-        rec = rec or self.geometry.rec
+        # rec = rec or Receiver(name='rec', grid=self.model.grid,
+        #                      time_range=self.geometry.time_axis,
+        #                      coordinates=self.geometry.rec_positions)
 
         # Create the forward wavefield if not provided
         u = u or TimeFunction(name='u', grid=self.model.grid,
@@ -109,9 +111,9 @@ class AcousticWaveSolver(object):
         vp = vp or self.model.vp
 
         # Execute operator and return wavefield and receiver data
-        summary = self.op_fwd(save).apply(src=src, rec=rec, u=u, vp=vp,
+        summary = self.op_fwd(save).apply(src=src, u=u, vp=vp,
                                           dt=kwargs.pop('dt', self.dt), **kwargs)
-        return rec, u, summary
+        return u, summary
 
     def adjoint(self, rec, srca=None, v=None, vp=None, **kwargs):
         """

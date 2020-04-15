@@ -353,11 +353,11 @@ int Forward(const float dt, const float o_x, const float o_y, const float o_z, s
   gettimeofday(&end_section1, NULL);
   timers->section1 += (double)(end_section1.tv_sec - start_section1.tv_sec) + (double)(end_section1.tv_usec - start_section1.tv_usec) / 1000000;
 
-  x0_blk0_size = 64;
-  y0_blk0_size = 64; // to fix as 8/16 etc
+  x0_blk0_size = 512;
+  y0_blk0_size = 512; // to fix as 8/16 etc
   int sf = 4;
   //int t_blk_size = time_M - time_m ;
-  int t_blk_size = 20*(time_M - time_m);
+  int t_blk_size = 15*(time_M - time_m);
   //printf("Global time loop to timesteps = %d \n", time_M - time_m +1 );
   for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += sf*t_blk_size) // for each t block
   //int t_blk = time_m;
@@ -393,8 +393,8 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
 
   //printf("From x: %d to %d \n", x_m, (x_M + sf * (time_M - time_m)));
   //printf("From y: %d to %d \n", y_m, (y_M + sf * (time_M - time_m)));
-  int sbx = 8;
-  int sby = 8;
+  int sbx = 64;
+  int sby = 64;
   for (int x0_blk0 = x_m; x0_blk0 <= (x_M + sf * (time_M - time_m)); x0_blk0 += x0_blk0_size + 1)
   {
     //printf(" Change of xblock \n");
@@ -411,7 +411,6 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
         //printf("New T time= %d : %d \n", t_blk, min(t_blk + t_blk_size, sf * (time_M - time_m)));
         //printf("--x loop from x = %d to %d \n", max((x_m + time), x0_blk0), min((x_M + time), (x0_blk0 + x0_blk0_size)));
         //printf("----y loop from y = %d to %d \n", max((y_m + time), y0_blk0), min((y_M + time), (y0_blk0 + y0_blk0_size)));
-
 #pragma omp parallel for collapse(2) schedule(dynamic,1)
         for (int xb = max((x_m + time), x0_blk0); xb <= min((x_M + time), (x0_blk0 + x0_blk0_size)); xb+=sbx)
         {
@@ -430,11 +429,8 @@ void bf0(const float dt, struct dataobj *restrict u_vec, struct dataobj *restric
 #pragma omp simd aligned(u : 32)
                 for (int spzi = 0; spzi < sparse_source_mask_NNZ[x + 4 - time][y + 4 - time]; spzi++) // Inner block loop
                 {
-                  //printf("\n Sparse index of z : var spzi is %d ", spzi);
-
                   int zind = sparse_source_mask[x + 4 - time][y + 4 - time][spzi];
                   //printf("\n Dense z index zind is : %d", sparse_source_mask[x + 4 - time][y + 4 - time][spzi]);
-
                   u[t1][x + 4 - time][y + 4 - time][zind] += source_mask[x + 4 - time][y + 4 - time][zind] * save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1];
                   //printf("\n Source injection at grid[%d][%d][%d] with value src = %f, ", x + 4 - time, y + 4 - time, zind, save_src[(source_id[x + 4 - time][y + 4 - time][zind])][tw + 1]);
                 }

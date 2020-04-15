@@ -36,7 +36,7 @@ def run(shape=(50, 50, 50), spacing=(20.0, 20.0, 20.0), tn=100.0,
     # checkpointing, PyRevolve will take care of the time history
     save = full_run and not checkpointing
     # Define receiver geometry (spread across x, just below surface)
-    rec, u, summary = solver.forward(save=save, autotune=autotune)
+    u, summary = solver.forward(save=save, autotune=autotune)
     
     # print(norm(u))
 
@@ -48,7 +48,7 @@ def run(shape=(50, 50, 50), spacing=(20.0, 20.0, 20.0), tn=100.0,
         solver.forward(save=save, vp=2.0)
 
     if not full_run:
-        return summary.gflopss, summary.oi, summary.timings, [rec, u.data]
+        return summary.gflopss, summary.oi, summary.timings, [u.data]
 
     # Smooth velocity
     initial_vp = Function(name='v0', grid=solver.model.grid, space_order=space_order)
@@ -61,7 +61,7 @@ def run(shape=(50, 50, 50), spacing=(20.0, 20.0, 20.0), tn=100.0,
     solver.born(dm, autotune=autotune)
     info("Applying Gradient")
     solver.gradient(rec, u, autotune=autotune, checkpointing=checkpointing)
-    return summary.gflopss, summary.oi, summary.timings, [rec, u.data]
+    return summary.gflopss, summary.oi, summary.timings, [u.data]
 
 
 if __name__ == "__main__":
@@ -93,11 +93,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # 3D preset parameters
-    shape = tuple(args.ndim * [1024])
+    shape = tuple(args.ndim * [512])
     spacing = tuple(args.ndim * [15.0])
     tn = 58. if args.ndim < 3 else 250.
     preset = 'constant-isotropic' if args.constant else 'layers-isotropic'
-    run(shape=shape, spacing=spacing, nbl=args.nbl, tn=1000,
+    run(shape=shape, spacing=spacing, nbl=args.nbl, tn=200,
         space_order=args.space_order, preset=preset, kernel=args.kernel,
         autotune=args.autotune, dse=args.dse, dle=args.dle, full_run=args.full,
         checkpointing=args.checkpointing)
