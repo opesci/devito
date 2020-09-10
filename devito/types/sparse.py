@@ -111,6 +111,12 @@ class AbstractSparseFunction(DiscreteFunction):
         """
         return self.interpolator.inject(*args, **kwargs)
 
+    def inject2nested(self, *args, **kwargs):
+        """
+        Implement an injection operation from a sparse point onto the grid
+        """
+        return self.interpolator.inject(*args, **kwargs)
+
     @property
     def _support(self):
         """
@@ -916,6 +922,32 @@ class SparseTimeFunction(AbstractSparseTimeFunction, SparseFunction):
             expr = expr.subs({self.time_dim: p_t})
 
         return super(SparseTimeFunction, self).inject(field, expr, offset=offset)
+
+    def inject2nested(self, field, expr, offset=0, u_t=None, p_t=None):
+        """
+        Generate equations injecting an arbitrary expression into a field.
+
+        Parameters
+        ----------
+        field : Function
+            Input field into which the injection is performed.
+        expr : expr-like
+            Injected expression.
+        offset : int, optional
+            Additional offset from the boundary.
+        u_t : expr-like, optional
+            Time index at which the interpolation is performed.
+        p_t : expr-like, optional
+            Time index at which the result of the interpolation is stored.
+        """
+        # Apply optional time symbol substitutions to field and expr
+        if u_t is not None:
+            field = field.subs({field.time_dim: u_t})
+        if p_t is not None:
+            expr = expr.subs({self.time_dim: p_t})
+
+        return super(SparseTimeFunction, self).inject(field, expr, offset=offset)
+
 
     # Pickling support
     _pickle_kwargs = AbstractSparseTimeFunction._pickle_kwargs +\

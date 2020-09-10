@@ -1,7 +1,7 @@
 from sympy import cos, sin, sqrt
 
 from devito import Eq, Operator, TimeFunction, NODE, solve
-from examples.seismic import PointSource, Receiver
+from examples.seismic import PointSource, Receiver, RickerSource
 
 
 def second_order_stencil(model, u, v, H0, Hz, forward=True):
@@ -435,6 +435,7 @@ def ForwardOperator(model, geometry, space_order=4,
     """
 
     dt = model.grid.time_dim.spacing
+    print("spacing dt is :", dt)
     m = model.m
     time_order = 1 if kernel == 'staggered' else 2
     if kernel == 'staggered':
@@ -451,17 +452,24 @@ def ForwardOperator(model, geometry, space_order=4,
                      time_order=time_order, space_order=space_order)
     src = PointSource(name='src', grid=model.grid, time_range=geometry.time_axis,
                       npoint=geometry.nsrc)
-    rec = Receiver(name='rec', grid=model.grid, time_range=geometry.time_axis,
-                   npoint=geometry.nrec)
+    # rec = Receiver(name='rec', grid=model.grid, time_range=geometry.time_axis,
+    #               npoint=geometry.nrec)
 
     # FD kernels of the PDE
     FD_kernel = kernels[(kernel, len(model.shape))]
     stencils = FD_kernel(model, u, v, space_order)
 
+    tt_stencils = kwargs['tteqs']
+
+    if tt_stencils:
+        stencils += tt_stencils
+        return Operator(stencils, subs=model.spacing_map, name='ForwardTTI', **kwargs)
+
     # Source and receivers
     stencils += src.inject(field=u.forward, expr=src * dt**2 / m)
     stencils += src.inject(field=v.forward, expr=src * dt**2 / m)
-    stencils += rec.interpolate(expr=u + v)
+
+    # stencils += rec.interpolate(expr=u + v)
 
     # Substitute spacing terms to reduce flops
     return Operator(stencils, subs=model.spacing_map, name='ForwardTTI', **kwargs)

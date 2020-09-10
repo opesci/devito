@@ -11,6 +11,7 @@ from devito.tools import Pickable, dtype_to_cstr, is_integer, memoized_meth
 from devito.types.args import ArgProvider
 from devito.types.basic import Symbol, DataSymbol, Scalar
 
+
 __all__ = ['Dimension', 'SpaceDimension', 'TimeDimension', 'DefaultDimension',
            'CustomDimension', 'SteppingDimension', 'SubDimension', 'ConditionalDimension',
            'dimensions', 'ModuloDimension', 'IncrDimension', 'ShiftedDimension']
@@ -222,7 +223,7 @@ class Dimension(ArgProvider):
         """
         Produce a map of argument values after evaluating user input. If no user
         input is provided, get a known value in ``args`` and adjust it so that no
-        out-of-bounds memory accesses will be performeed. The adjustment exploits
+        out-of-bounds memory accesses will be performed. The adjustment exploits
         the information in ``interval``, an Interval describing the Dimension data
         space. If no value is available in ``args``, use a default value.
 

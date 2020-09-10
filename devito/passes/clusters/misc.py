@@ -46,6 +46,7 @@ class Lift(Queue):
                 processed.append(c)
                 continue
 
+            # Union of processed clusters and incoming clusters
             impacted = set(processed) | set(clusters[n+1:])
 
             # None of the Functions appearing in a lifted Cluster can be written to
