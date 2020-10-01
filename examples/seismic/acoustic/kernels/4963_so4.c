@@ -71,7 +71,7 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
                 {
                   for (int y = y0_blk0; y <= min(min((y_M + time), (yb + yb_size)), (y0_blk0 + y0_blk0_size - 1)); y++)
                   {
-#pragma omp simd aligned(damp, usol, vp : 32)
+#pragma omp simd aligned(damp, usol, vp : 64)
                     for (int z = z_m; z <= z_M; z += 1)
                     {
                       float r14 = -2.5F * usol[t1][x - time + 4][y - time + 4][z + 4];
@@ -80,7 +80,7 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
                       float r11 = 1.0 / (vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4]);
                       usol[t0][x - time + 4][y - time + 4][z + 4] = (r11 * (-r12 * (-2.0F * usol[t1][x - time + 4][y - time + 4][z + 4] + usol[t2][x - time + 4][y - time + 4][z + 4])) + r13 * (damp[x - time + 1][y - time + 1][z + 1] * usol[t1][x - time + 4][y - time + 4][z + 4]) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 4][y - time + 4][z + 2] + usol[t1][x - time + 4][y - time + 4][z + 6]) + 1.33333333F * (usol[t1][x - time + 4][y - time + 4][z + 3] + usol[t1][x - time + 4][y - time + 4][z + 5])) / ((h_z * h_z)) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 4][y - time + 2][z + 4] + usol[t1][x - time + 4][y - time + 6][z + 4]) + 1.33333333F * (usol[t1][x - time + 4][y - time + 3][z + 4] + usol[t1][x - time + 4][y - time + 5][z + 4])) / ((h_y * h_y)) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 2][y - time + 4][z + 4] + usol[t1][x - time + 6][y - time + 4][z + 4]) + 1.33333333F * (usol[t1][x - time + 3][y - time + 4][z + 4] + usol[t1][x - time + 5][y - time + 4][z + 4])) / ((h_x * h_x))) / (r11 * r12 + r13 * damp[x - time + 1][y - time + 1][z + 1]);
                     }
-#pragma omp simd aligned(damp, usol, vp : 32)
+#pragma omp simd aligned(damp, usol, vp : 64)
                     for (int sp_zi = sp_zi_m; sp_zi <= nnz_sp_source_mask[x - time][y - time] - 1; sp_zi += 1)
                     {
                       int zind = sp_source_mask[x - time][y - time][sp_zi];

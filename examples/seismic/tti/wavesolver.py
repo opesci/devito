@@ -9,6 +9,9 @@ import pyvista as pv
 import matplotlib.pyplot as plt
 import numpy as np
 from devito.types.basic import Scalar
+from matplotlib.pyplot import pause # noqa
+import sys
+np.set_printoptions(threshold=sys.maxsize)  # pdb print full size
 
 
 class AnisotropicWaveSolver(object):
@@ -147,17 +150,17 @@ class AnisotropicWaveSolver(object):
             kwargs.pop('phi', None)
         # Execute operator and return wavefield and receiver data
 
-        # op = self.op_fwd(kernel, save)
+        op = self.op_fwd(kernel, save)
         print(kwargs)
-        # summary = op.apply(src=src, u=u, v=v,
-        #                    dt=kwargs.pop('dt', self.dt), **kwargs)
+        summary = op.apply(src=src, u=u, v=v,
+                           dt=kwargs.pop('dt', self.dt), **kwargs)
 
         regnormu = norm(u)
         regnormv = norm(v)
         print("Norm u:", regnormu)
         print("Norm v:", regnormv)
 
-        if 0 :
+        if 0:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
@@ -275,10 +278,10 @@ class AnisotropicWaveSolver(object):
         bsizes = (8, 8, 32, 32)
         block_sizes.data[:] = bsizes
 
-        eqxb = Eq(xb_size, block_sizes[0])
-        eqyb = Eq(yb_size, block_sizes[1])
-        eqxb2 = Eq(x0_blk0_size, block_sizes[2])
-        eqyb2 = Eq(y0_blk0_size, block_sizes[3])
+        # eqxb = Eq(xb_size, block_sizes[0])
+        # eqyb = Eq(yb_size, block_sizes[1])
+        # eqxb2 = Eq(x0_blk0_size, block_sizes[2])
+        # eqyb2 = Eq(y0_blk0_size, block_sizes[3])
 
         eq0 = Eq(sp_zi.symbolic_max, nnz_sp_source_mask[x, y] - 1,
                  implicit_dims=(time, x, y))
@@ -292,31 +295,85 @@ class AnisotropicWaveSolver(object):
         eq_v = Inc(v.forward[t+1, x, y, zind], inj_v, implicit_dims=(time, x, y, sp_zi))
 
         # The additional time-tiling equations
-        tteqs = (eqxb, eqyb, eqxb2, eqyb2, eq0, eq1, eq_u, eq_v)
+        # tteqs = (eqxb, eqyb, eqxb2, eqyb2, eq0, eq1, eq_u, eq_v)
 
-        # Pick vp and Thomsen parameters from model unless explicitly provided
-        # kwargs.update(self.model.physical_params(
-        #    vp=vp, epsilon=epsilon, delta=delta, theta=theta, phi=phi)
-        # )
+        performance_map = np.array([[0, 0, 0, 0, 0]])
 
-        op_tt = self.op_fwd(kernel, save, tteqs)
+        bxstart = 4
+        bxend = 17
+        bystart = 4
+        byend = 17
+        bstep = 16
 
-        norm_tt_u = norm(u)
-        norm_tt_v = norm(v)
+        txstart = 8
+        txend = 9
+        tystart = 8
+        tyend = 9
 
-        print(norm_tt_u)
-        print(norm_tt_v)
-        u.data[:] = 0
-        v.data[:] = 0
-        print(kwargs)
-        import pdb; pdb.set_trace()
-        summary_tt = op_tt.apply(u=u, v=v,
-                         dt=kwargs.pop('dt', self.dt), **kwargs)
+        tstep = 16
+        # Temporal autotuning
+        for tx in range(txstart, txend, tstep):
+            # import pdb; pdb.set_trace()
+            for ty in range(tystart, tyend, tstep):
+                for bx in range(bxstart, bxend, bstep):
+                    for by in range(bystart, byend, bstep):
 
-        print(norm(u))
-        print(norm(v))
+                        block_sizes.data[:] = [tx, ty, bx, by]
 
-        if 1:
+                        eqxb = Eq(xb_size, block_sizes[0])
+                        eqyb = Eq(yb_size, block_sizes[1])
+                        eqxb2 = Eq(x0_blk0_size, block_sizes[2])
+                        eqyb2 = Eq(y0_blk0_size, block_sizes[3])
+
+                        u.data[:] = 0
+                        v.data[:] = 0
+                        print("-----")
+                        tteqs = (eqxb, eqyb, eqxb2, eqyb2, eq0, eq1, eq_u, eq_v)
+
+                        op_tt = self.op_fwd(kernel, save, tteqs)
+                        summary_tt = op_tt.apply(u=u, v=v,
+                                                 dt=kwargs.pop('dt', self.dt), **kwargs)
+                        norm_tt_u = norm(u)
+                        norm_tt_v = norm(v)
+                        print("Norm u:", regnormu)
+                        print("Norm v:", regnormv)
+                        print("Norm(tt_u):", norm_tt_u)
+                        print("Norm(tt_v):", norm_tt_v)
+
+                        print("===Temporal blocking======================================")
+
+                        performance_map = np.append(performance_map, [[tx, ty, bx, by, summary_tt.globals['fdlike'].gflopss]], 0)
+
+
+                print(performance_map)
+                # tids = np.unique(performance_map[:, 0])
+
+                #for tid in tids:
+                bids = np.where((performance_map[:, 0] == tx) & (performance_map[:, 1] == ty))
+                bx_data = np.unique(performance_map[bids, 2])
+                by_data = np.unique(performance_map[bids, 3])
+                gptss_data = performance_map[bids, 4]
+                gptss_data = gptss_data.reshape(len(bx_data), len(by_data))
+
+                fig, ax = plt.subplots()
+                im = ax.imshow(gptss_data); pause(2)
+
+                # We want to show all ticks...
+                ax.set_xticks(np.arange(len(bx_data)))
+                ax.set_yticks(np.arange(len(by_data)))
+                # ... and label them with the respective list entries
+                ax.set_xticklabels(bx_data)
+                ax.set_yticklabels(by_data)
+
+                ax.set_title("Gpts/s for fixed tile size. (Sweeping block sizes)")
+                fig.tight_layout()
+
+                fig.colorbar(im, ax=ax)
+                # ax = sns.heatmap(gptss_data, linewidth=0.5)
+                plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty)) + ".pdf")
+
+
+        if 0:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()

@@ -8,7 +8,7 @@ from examples.seismic.tti import AnisotropicWaveSolver
 
 
 def tti_setup(shape=(50, 50, 50), spacing=(20.0, 20.0, 20.0), tn=250.0,
-              kernel='centered', space_order=4, nbl=0, preset='layers-tti',
+              kernel='centered', space_order=4, nbl=10, preset='layers-tti',
               **kwargs):
     # Two layer model for true velocity
     model = demo_model(preset, shape=shape, spacing=spacing,

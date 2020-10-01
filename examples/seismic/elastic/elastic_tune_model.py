@@ -288,9 +288,9 @@ byend = 35
 bstep = 4
 
 txstart = 32
-txend = 65
+txend = 128
 tystart = 32
-tyend = 65
+tyend = 128
 
 tstep = 8
 # Temporal autotuning
@@ -342,7 +342,7 @@ for tx in range(txstart, txend, tstep):
 
 
         print(performance_map)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # tids = np.unique(performance_map[:, 0])
 
         #for tid in tids:

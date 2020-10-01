@@ -6,7 +6,7 @@ import argparse
 
 from devito.logger import info
 from devito import TimeFunction, Function, Dimension, Eq, Inc, solve
-from devito import Operator, norm
+from devito import Operator, norm, configuration
 from examples.seismic import RickerSource, TimeAxis
 from examples.seismic import Model
 import sys
@@ -211,7 +211,9 @@ eqyb2 = Eq(y0_blk0_size, block_sizes[3])
 
 opref = Operator([stencil_ref, src_term_ref], opt=('advanced', {'openmp': True}))
 print("===Space blocking==")
+configuration['autotuning']='aggressive'
 opref.apply(time=time_range.num-2, dt=model.critical_dt)
+configuration['autotuning']='off'
 print("===========")
 
 normuref = norm(uref)

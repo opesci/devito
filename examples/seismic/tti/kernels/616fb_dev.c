@@ -91,37 +91,56 @@ int ForwardTTI(struct dataobj *restrict block_sizes_vec, struct dataobj *restric
   gettimeofday(&end_section0, NULL);
   timers->section0 += (double)(end_section0.tv_sec - start_section0.tv_sec) + (double)(end_section0.tv_usec - start_section0.tv_usec) / 1000000;
 
-  int y0_blk0_size = block_sizes[3];
-  int x0_blk0_size = block_sizes[2];
-  int yb_size = block_sizes[1];
-  int xb_size = block_sizes[0];
+  int y0_blk0_size = 8; //block_sizes[3];
+  int x0_blk0_size = 8; //block_sizes[2];
+  int yb_size = 16; // block_sizes[1];
+  int xb_size = 16; //block_sizes[0];
   int sf = 4;
   int t_blk_size = 2 * sf * (time_M - time_m);
 
   printf(" Tiles: %d, %d ::: Blocks %d, %d \n", xb_size, yb_size, x0_blk0_size, y0_blk0_size);
 
-  for (int t_blk = time_m; t_blk <= 1 + sf * (time_M - time_m); t_blk += sf * t_blk_size) // for each t block
+  for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += sf * t_blk_size) // for each t block
   {
-    for (int xb = x_m - 1; xb <= (x_M + sf * (time_M - time_m)); xb += xb_size)
+    for (int xb = x_m; xb <= (x_M + sf * (time_M - time_m)); xb += xb_size)
     {
       //printf(" Change of outer xblock %d \n", xb);
-      for (int yb = y_m - 1; yb <= (y_M + sf * (time_M - time_m)); yb += yb_size)
+      for (int yb = y_m; yb <= (y_M + sf * (time_M - time_m)); yb += yb_size)
       {
         //printf(" Timestep tw: %d, Updating x: %d y: %d \n", xb, yb);
 
-        for (int time = t_blk, t0 = (time) % (3), t1 = (time + 1) % (3), t2 = (time + 2) % (3); time <= 2 + min(t_blk + t_blk_size - 1, sf * (time_M - time_m)); time += sf, t0 = (((time / sf) % (time_M - time_m + 1))) % (3), t1 = (((time / sf) % (time_M - time_m + 1)) + 1) % (3), t2 = (((time / sf) % (time_M - time_m + 1)) + 2) % (3))
+        for (int time = t_blk, t0 = (time) % (3), t1 = (time + 1) % (3), t2 = (time + 2) % (3); time <= 1 + min(t_blk + t_blk_size - 1, sf * (time_M - time_m)); time += sf, t0 = (((time / sf) % (time_M - time_m + 1))) % (3), t1 = (((time / sf) % (time_M - time_m + 1)) + 1) % (3), t2 = (((time / sf) % (time_M - time_m + 1)) + 2) % (3))
         {
           int tw = ((time / sf) % (time_M - time_m + 1));
           struct timeval start_section1, end_section1;
           gettimeofday(&start_section1, NULL);
           /* Begin section1 */
 
-          bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, x0_blk0_size, x_M, x_m - 1, y0_blk0_size, y_M, y_m - 1, z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, x0_blk0_size, x_M - (x_M - x_m + 2) % (x0_blk0_size), x_m - 1, y0_blk0_size, y_M - (y_M - y_m + 2) % (y0_blk0_size), y_m - 1, z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, x0_blk0_size, x_M, x_m , y0_blk0_size, y_M , y_m , z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
           //printf("\n BF0 - 1 IS OVER");
 
+          //bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, x0_blk0_size, x_M - (x_M - x_m + 2) % (x0_blk0_size), x_m - 1, (y_M - y_m + 2) % (y0_blk0_size), y_M, y_M - (y_M - y_m + 2) % (y0_blk0_size) + 1, z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF0 - 2 IS OVER");
+          //bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, (x_M - x_m + 2) % (x0_blk0_size), x_M, x_M - (x_M - x_m + 2) % (x0_blk0_size) + 1, y0_blk0_size, y_M - (y_M - y_m + 2) % (y0_blk0_size), y_m - 1, z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF0 - 3 IS OVER");
+
+          //bf0((float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, x_size, y_size, z_size, time, t0, (x_M - x_m + 2) % (x0_blk0_size), x_M, x_M - (x_M - x_m + 2) % (x0_blk0_size) + 1, (y_M - y_m + 2) % (y0_blk0_size), y_M, y_M - (y_M - y_m + 2) % (y0_blk0_size) + 1, z_M, z_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF0 - 4 IS OVER");
+
           /*==============================================*/
+          //bf1(damp_vec, dt, epsilon_vec, (float *)r17, (float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, save_src_v_vec, source_id_vec, source_mask_vec, x_size, y_size, z_size, time, t0, t1, t2, x1_blk0_size, -2 + x_M - (x_M - x_m + 1) % (x1_blk0_size), x_m, y1_blk0_size, -2 + y_M - (y_M - y_m + 1) % (y1_blk0_size), y_m, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, tw);
           bf1(damp_vec, dt, epsilon_vec, (float *)r17, (float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, save_src_v_vec, source_id_vec, source_mask_vec, x_size, y_size, z_size, time, t0, t1, t2, x0_blk0_size, x_M, x_m, y0_blk0_size, y_M, y_m, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, tw);
           //printf("\n BF1 - 1 IS OVER");
+
+          //bf1(damp_vec, dt, epsilon_vec, (float *)r17, (float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, save_src_v_vec, source_id_vec, source_mask_vec, x_size, y_size, z_size, time, t0, t1, t2, x1_blk0_size, x_M - (x_M - x_m + 1) % (x1_blk0_size), x_m, (y_M - y_m + 1) % (y1_blk0_size), y_M, y_M - (y_M - y_m + 1) % (y1_blk0_size) + 1, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF1 - 2 IS OVER");
+
+          //bf1(damp_vec, dt, epsilon_vec, (float *)r17, (float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, save_src_v_vec, source_id_vec, source_mask_vec, x_size, y_size, z_size, time, t0, t1, t2, (x_M - x_m + 1) % (x1_blk0_size), x_M, x_M - (x_M - x_m + 1) % (x1_blk0_size) + 1, y1_blk0_size, y_M - (y_M - y_m + 1) % (y1_blk0_size), y_m, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF1 - 3 IS OVER");
+
+          //bf1(damp_vec, dt, epsilon_vec, (float *)r17, (float *)r18, (float *)r19, (float *)r20, (float *)r21, (float *)r34, (float *)r35, u_vec, v_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, save_src_v_vec, source_id_vec, source_mask_vec, x_size, y_size, z_size, time, t0, t1, t2, (x_M - x_m + 1) % (x1_blk0_size), x_M, x_M - (x_M - x_m + 1) % (x1_blk0_size) + 1, (y_M - y_m + 1) % (y1_blk0_size), y_M, y_M - (y_M - y_m + 1) % (y1_blk0_size) + 1, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, tw);
+          //printf(" BF1 - 4 IS OVER");
 
           /* End section1 */
           gettimeofday(&end_section1, NULL);
@@ -130,7 +149,28 @@ int ForwardTTI(struct dataobj *restrict block_sizes_vec, struct dataobj *restric
       }
     }
   }
-
+  /*
+  for (int time = time_m, t1 = (time + 1) % (3); time <= time_M; time += 1, t1 = (time + 1) % (3))
+  {
+    struct timeval start_section2, end_section2;
+    gettimeofday(&start_section2, NULL);
+ Begin section2
+#pragma omp parallel num_threads(nthreads_nonaffine)
+    {
+      int chunk_size = (int)(fmax(1, (1.0F / 3.0F) * (x_M - x_m + 1) / nthreads_nonaffine));
+#pragma omp for collapse(1) schedule(dynamic, chunk_size)
+      for (int x = x_m; x <= x_M; x += 1)
+      {
+        for (int y = y_m; y <= y_M; y += 1)
+        {
+        }
+      }
+    }
+     End section2
+    gettimeofday(&end_section2, NULL);
+    timers->section2 += (double)(end_section2.tv_sec - start_section2.tv_sec) + (double)(end_section2.tv_usec - start_section2.tv_usec) / 1000000;
+  }
+*/
   free(r21);
   free(r20);
   free(r19);
@@ -167,10 +207,9 @@ void bf0(float *restrict r18_vec, float *restrict r19_vec, float *restrict r20_v
         //printf(" Change of inner x0_blk0 %d \n", x0_blk0);
         for (int x = x0_blk0; x <= min(min((x_M + time), (xb + xb_size - 1)), (x0_blk0 + x0_blk0_size - 1)); x++)
         {
-          //printf(" bf0 Timestep tw: %d, Updating x: %d \n", tw, x - time + 1);
           for (int y = y0_blk0; y <= min(min((y_M + time), (yb + yb_size - 1)), (y0_blk0 + y0_blk0_size - 1)); y++)
           {
-            // printf(" bf0 Timestep tw: %d, Updating x: %d y: %d \n", tw, x - time + 1, y - time + 1);
+            //printf(" bf0 Timestep tw: %d, Updating x: %d y: %d \n", tw, x-time+1, y-time+1);
 #pragma omp simd aligned(u, v : 32)
             for (int z = z_m - 1 ; z <= z_M; z += 1)
             {
@@ -224,14 +263,14 @@ void bf1(struct dataobj *restrict damp_vec, const float dt, struct dataobj *rest
       {
         for (int x = x1_blk0; x <= min(min((x_M + time), (xb - 2 + xb_size - 1)), (x1_blk0 + x1_blk0_size - 1)); x++)
         {
-          //printf(" bf1 Timestep tw: %d, Updating x: %d \n", tw, x - time + 4);
           for (int y = y1_blk0; y <= min(min((y_M + time), (yb - 2 + yb_size - 1)), (y1_blk0 + y1_blk0_size - 1)); y++)
           {
             //printf(" bf1 Timestep tw: %d, Updating x: %d y: %d \n", tw, x - time + 4, y - time + 4);
             #pragma omp simd aligned(damp, epsilon, u, v, vp : 32)
-            for (int z = z_m ; z <= z_M; z += 1)
+            for (int z = z_m; z <= z_M; z += 1)
             {
               //printf(" bf1 Updating x: %d y: %d z: %d \n", x - time + 4, y - time + 4,  z + 4);
+
               //printf(" bf1 Updating x: %d y: %d z: %d \n", x - time + 4, y - time + 4,  z + 4);
               float r46 = 1.0 / dt;
               float r45 = 1.0 / (dt * dt);
@@ -262,4 +301,5 @@ void bf1(struct dataobj *restrict damp_vec, const float dt, struct dataobj *rest
     }
   }
 }
+/* Backdoor edit at Wed Sep  9 19:03:00 2020*/
 

@@ -44,9 +44,9 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   int y0_blk0_size = block_sizes[3];
   int x0_blk0_size = block_sizes[2];
   int yb_size = block_sizes[1];
-  printf(" Tiles: %d, %d ::: Blocks %d, %d \n", xb_size, yb_size, x0_blk0_size, y0_blk0_size);
+  printf(" Tiles: %d, %d ::: Blocks %d, %d \n", x0_blk0_size, y0_blk0_size, xb_size, yb_size);
 
-  int sf = 2;
+  int sf = 4; // half the space order
   int t_blk_size = 2 * sf * (time_M - time_m);
 
   struct timeval start_section0, end_section0;
@@ -60,6 +60,7 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
         for (int time = t_blk, t0 = (time + 1) % (3), t1 = (time) % (3), t2 = (time + 2) % (3); time <= 1 + min(t_blk + t_blk_size - 1, sf * (time_M - time_m)); time += sf, t0 = (((time / sf) % (time_M - time_m + 1)) + 1) % (3), t1 = (((time / sf) % (time_M - time_m + 1))) % (3), t2 = (((time / sf) % (time_M - time_m + 1)) + 2) % (3))
         {
           int tw = ((time / sf) % (time_M - time_m + 1));
+          /* Begin section0 */
 #pragma omp parallel num_threads(nthreads)
           {
 #pragma omp for collapse(2) schedule(dynamic, 1)
@@ -74,18 +75,18 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
 #pragma omp simd aligned(damp, usol, vp : 32)
                     for (int z = z_m; z <= z_M; z += 1)
                     {
-                      float r14 = -2.5F * usol[t1][x - time + 4][y - time + 4][z + 4];
+                      float r14 = -2.84722222F * usol[t1][x - time + 8][y - time + 8][z + 8];
                       float r13 = 1.0 / dt;
                       float r12 = 1.0 / (dt * dt);
-                      float r11 = 1.0 / (vp[x - time + 4][y - time + 4][z + 4] * vp[x - time + 4][y - time + 4][z + 4]);
-                      usol[t0][x - time + 4][y - time + 4][z + 4] = (r11 * (-r12 * (-2.0F * usol[t1][x - time + 4][y - time + 4][z + 4] + usol[t2][x - time + 4][y - time + 4][z + 4])) + r13 * (damp[x - time + 1][y - time + 1][z + 1] * usol[t1][x - time + 4][y - time + 4][z + 4]) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 4][y - time + 4][z + 2] + usol[t1][x - time + 4][y - time + 4][z + 6]) + 1.33333333F * (usol[t1][x - time + 4][y - time + 4][z + 3] + usol[t1][x - time + 4][y - time + 4][z + 5])) / ((h_z * h_z)) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 4][y - time + 2][z + 4] + usol[t1][x - time + 4][y - time + 6][z + 4]) + 1.33333333F * (usol[t1][x - time + 4][y - time + 3][z + 4] + usol[t1][x - time + 4][y - time + 5][z + 4])) / ((h_y * h_y)) + (r14 - 8.33333333e-2F * (usol[t1][x - time + 2][y - time + 4][z + 4] + usol[t1][x - time + 6][y - time + 4][z + 4]) + 1.33333333F * (usol[t1][x - time + 3][y - time + 4][z + 4] + usol[t1][x - time + 5][y - time + 4][z + 4])) / ((h_x * h_x))) / (r11 * r12 + r13 * damp[x - time + 1][y - time + 1][z + 1]);
+                      float r11 = 1.0 / (vp[x - time + 8][y - time + 8][z + 8] * vp[x - time + 8][y - time + 8][z + 8]);
+                      usol[t0][x - time + 8][y - time + 8][z + 8] = (r11 * (-r12 * (-2.0F * usol[t1][x - time + 8][y - time + 8][z + 8] + usol[t2][x - time + 8][y - time + 8][z + 8])) + r13 * (damp[x - time + 1][y - time + 1][z + 1] * usol[t1][x - time + 8][y - time + 8][z + 8]) + (r14 - 1.78571429e-3F * (usol[t1][x - time + 8][y - time + 8][z + 4] + usol[t1][x - time + 8][y - time + 8][z + 12]) + 2.53968254e-2F * (usol[t1][x - time + 8][y - time + 8][z + 5] + usol[t1][x - time + 8][y - time + 8][z + 11]) - 2.0e-1F * (usol[t1][x - time + 8][y - time + 8][z + 6] + usol[t1][x - time + 8][y - time + 8][z + 10]) + 1.6F * (usol[t1][x - time + 8][y - time + 8][z + 7] + usol[t1][x - time + 8][y - time + 8][z + 9])) / ((h_z * h_z)) + (r14 - 1.78571429e-3F * (usol[t1][x - time + 8][y - time + 4][z + 8] + usol[t1][x - time + 8][y - time + 12][z + 8]) + 2.53968254e-2F * (usol[t1][x - time + 8][y - time + 5][z + 8] + usol[t1][x - time + 8][y - time + 11][z + 8]) - 2.0e-1F * (usol[t1][x - time + 8][y - time + 6][z + 8] + usol[t1][x - time + 8][y - time + 10][z + 8]) + 1.6F * (usol[t1][x - time + 8][y - time + 7][z + 8] + usol[t1][x - time + 8][y - time + 9][z + 8])) / ((h_y * h_y)) + (r14 - 1.78571429e-3F * (usol[t1][x - time + 4][y - time + 8][z + 8] + usol[t1][x - time + 12][y - time + 8][z + 8]) + 2.53968254e-2F * (usol[t1][x - time + 5][y - time + 8][z + 8] + usol[t1][x - time + 11][y - time + 8][z + 8]) - 2.0e-1F * (usol[t1][x - time + 6][y - time + 8][z + 8] + usol[t1][x - time + 10][y - time + 8][z + 8]) + 1.6F * (usol[t1][x - time + 7][y - time + 8][z + 8] + usol[t1][x - time + 9][y - time + 8][z + 8])) / ((h_x * h_x))) / (r11 * r12 + r13 * damp[x - time + 1][y - time + 1][z + 1]);
                     }
 #pragma omp simd aligned(damp, usol, vp : 32)
-                    for (int sp_zi = sp_zi_m; sp_zi <= nnz_sp_source_mask[x - time][y - time] - 1; sp_zi += 1)
+                    for (int sp_zi = sp_zi_m; sp_zi <= nnz_sp_source_mask[x - time][y - time]-1; sp_zi += 1)
                     {
                       int zind = sp_source_mask[x - time][y - time][sp_zi];
                       float r0 = save_src[((time / sf) % (time_M - time_m + 1))][source_id[x - time][y - time][zind]] * source_mask[x - time][y - time][zind];
-                      usol[t0][x - time + 4][y - time + 4][zind + 4] += r0;
+                      usol[t0][x - time + 8][y - time + 8][zind + 8] += r0;
                     }
                   }
                 }

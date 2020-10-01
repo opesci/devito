@@ -203,6 +203,7 @@ tystart = 16
 tyend = 33
 
 tstep = 16
+
 # Temporal autotuning
 for tx in range(txstart, txend, tstep):
     # import pdb; pdb.set_trace()
@@ -227,7 +228,7 @@ for tx in range(txstart, txend, tstep):
                 summary = op2.apply(time=time_range.num-1, dt=model.critical_dt)
                 print("===========")
 
-                performance_map = np.append(performance_map, [[tx, ty, bx, by, summary.globals['fdlike'].gpointss]], 0)
+                performance_map = np.append(performance_map, [[tx, ty, bx, by, summary.globals['fdlike'].gflopss]], 0)
 
                 normusol = norm(usol)
                 print("===========")
@@ -270,7 +271,7 @@ for tid in tids:
 # import pdb; pdb.set_trace()
     fig.colorbar(im, ax=ax)
     # ax = sns.heatmap(gptss_data, linewidth=0.5)
-    plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty) + ".pdf")
+    # plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty) + ".pdf")
 
 
 
@@ -278,9 +279,4 @@ for tid in tids:
 # save_src.data[0 ,source_id.data[14, 14, sp_source_mask.data[14, 14, 0]]]
 
 #plt.imshow(uref.data[2, int(nx/2) ,:, :]); pause(1)
-#plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
-
-
-# import pdb; pdb.set_trace()
-# Uncomment to plot a slice of the field
 #plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)

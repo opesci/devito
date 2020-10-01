@@ -70,7 +70,7 @@ int ForwardTTI(struct dataobj *restrict block_sizes_vec, struct dataobj *restric
 /* Begin section0 */
 #pragma omp parallel num_threads(nthreads)
   {
-#pragma omp for collapse(1) schedule(static, 1)
+#pragma omp for collapse(2) schedule(static, 1)
     for (int x = x_m - 1; x <= x_M; x += 1)
     {
       for (int y = y_m - 1; y <= y_M; y += 1)
@@ -95,7 +95,7 @@ int ForwardTTI(struct dataobj *restrict block_sizes_vec, struct dataobj *restric
   int x0_blk0_size = block_sizes[2];
   int yb_size = block_sizes[1];
   int xb_size = block_sizes[0];
-  int sf = 4;
+  int sf = 2;
   int t_blk_size = 2 * sf * (time_M - time_m);
 
   printf(" Tiles: %d, %d ::: Blocks %d, %d \n", xb_size, yb_size, x0_blk0_size, y0_blk0_size);
@@ -152,14 +152,10 @@ void bf0(float *restrict r18_vec, float *restrict r19_vec, float *restrict r20_v
   float(*restrict u)[u_vec->size[1]][u_vec->size[2]][u_vec->size[3]] __attribute__((aligned(64))) = (float(*)[u_vec->size[1]][u_vec->size[2]][u_vec->size[3]])u_vec->data;
   float(*restrict v)[v_vec->size[1]][v_vec->size[2]][v_vec->size[3]] __attribute__((aligned(64))) = (float(*)[v_vec->size[1]][v_vec->size[2]][v_vec->size[3]])v_vec->data;
 
-  if (x0_blk0_size == 0)
-  {
-    return;
-  }
 
 #pragma omp parallel num_threads(nthreads)
   {
-#pragma omp for collapse(1) schedule(dynamic, 1)
+#pragma omp for collapse(2) schedule(dynamic, 1)
     for (int x0_blk0 = max((x_m + time), xb); x0_blk0 <= min((x_M + time), (xb + xb_size)); x0_blk0 += x0_blk0_size)
     {
       for (int y0_blk0 = max((y_m + time), yb); y0_blk0 <= min((y_M + time), (yb + yb_size)); y0_blk0 += y0_blk0_size)
@@ -216,16 +212,16 @@ void bf1(struct dataobj *restrict damp_vec, const float dt, struct dataobj *rest
   }
 #pragma omp parallel num_threads(nthreads)
   {
-#pragma omp for collapse(1) schedule(dynamic, 1)
-    for (int x1_blk0 = max((x_m + time), xb - 2 ); x1_blk0 <= +min((x_M + time), (xb - 2 + xb_size)); x1_blk0 += x1_blk0_size)
+#pragma omp for collapse(2) schedule(dynamic, 1)
+    for (int x1_blk0 = max((x_m + time), xb - 0 ); x1_blk0 <= +min((x_M + time), (xb - 0 + xb_size)); x1_blk0 += x1_blk0_size)
     {
       //printf(" Change of inner x1_blk0 %d \n", x1_blk0);
-      for (int y1_blk0 = max((y_m + time), yb - 2 ); y1_blk0 <= +min((y_M + time), (yb - 2 + yb_size)); y1_blk0 += y1_blk0_size)
+      for (int y1_blk0 = max((y_m + time), yb - 0 ); y1_blk0 <= +min((y_M + time), (yb - 0 + yb_size)); y1_blk0 += y1_blk0_size)
       {
-        for (int x = x1_blk0; x <= min(min((x_M + time), (xb - 2 + xb_size - 1)), (x1_blk0 + x1_blk0_size - 1)); x++)
+        for (int x = x1_blk0; x <= min(min((x_M + time), (xb - 0 + xb_size - 1)), (x1_blk0 + x1_blk0_size - 1)); x++)
         {
           //printf(" bf1 Timestep tw: %d, Updating x: %d \n", tw, x - time + 4);
-          for (int y = y1_blk0; y <= min(min((y_M + time), (yb - 2 + yb_size - 1)), (y1_blk0 + y1_blk0_size - 1)); y++)
+          for (int y = y1_blk0; y <= min(min((y_M + time), (yb - 0 + yb_size - 1)), (y1_blk0 + y1_blk0_size - 1)); y++)
           {
             //printf(" bf1 Timestep tw: %d, Updating x: %d y: %d \n", tw, x - time + 4, y - time + 4);
             #pragma omp simd aligned(damp, epsilon, u, v, vp : 32)
