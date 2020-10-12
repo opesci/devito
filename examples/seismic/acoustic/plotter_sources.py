@@ -72,9 +72,9 @@ ste = 0.9
 stepx = (ste-stx)/int(np.sqrt(src.npoint))
 
 
-src.coordinates.data[:, :2] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,2)*np.array(model.domain_size[:1])
+src.coordinates.data[:, :2] = [9, 9]   #np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,2)*np.array(model.domain_size[:1])
 
-src.coordinates.data[:, -1] = 20  # Depth is 20m
+src.coordinates.data[:, -1] = 13  # Depth is 20m
 
 #src.coordinates.data[0, :] = np.array(model.domain_size) * .5
 #src.coordinates.data[0, -1] = 20  # Depth is 20m
@@ -88,7 +88,7 @@ src.coordinates.data[:, -1] = 20  # Depth is 20m
 
 # f : perform source injection on an empty grid
 f = TimeFunction(name="f", grid=model.grid, space_order=so, time_order=2)
-src_f = src.inject(field=f.forward, expr=src * dt**2 / model.m)
+src_f = src.inject(field=f.forward, expr=src)
 # op_f = Operator([src_f], opt=('advanced', {'openmp': True}))
 op_f = Operator([src_f])
 op_f.apply(time=time_range.num-1)
@@ -99,7 +99,7 @@ print("===========")
 
 # uref : reference solution
 uref = TimeFunction(name="uref", grid=model.grid, space_order=so, time_order=2)
-src_term_ref = src.inject(field=uref.forward, expr=src * dt**2 / model.m)
+src_term_ref = src.inject(field=uref.forward, expr=src)
 pde_ref = model.m * uref.dt2 - uref.laplace + model.damp * uref.dt
 stencil_ref = Eq(uref.forward, solve(pde_ref, uref.forward))
 
@@ -155,7 +155,7 @@ b_dim = Dimension(name='b_dim')
 save_src = TimeFunction(name='save_src', shape=(src.shape[0],
                         nzinds[1].shape[0]), dimensions=(src.dimensions[0], id_dim))
 
-save_src_term = src.inject(field=save_src[src.dimensions[0], source_id], expr=src * dt**2 / model.m)
+save_src_term = src.inject(field=save_src[src.dimensions[0], source_id], expr=src)
 
 op1 = Operator([save_src_term])
 op1.apply(time=time_range.num-1)
@@ -242,11 +242,27 @@ print("Norm(uref):", normuref)
 # save_src.data[0, source_id.data[14, 14, 11]]
 # save_src.data[0 ,source_id.data[14, 14, sp_source_mask.data[14, 14, 0]]]
 
-#plt.imshow(uref.data[2, int(nx/2) ,:, :]); pause(1)
-#plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(uref.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
 
 
 # Uncomment to plot a slice of the field
-#plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
+
+# import pdb; pdb.set_trace()
+
+# plt.figure()
+# plt.plot(src.time_values, src.data[:, 0])
+# plt.plot(src.time_values, save_src.data[:, :])
+
+# plt.xlabel('Time (ms)')
+# plt.ylabel('Amplitude')
+# plt.tick_params()
+# plt.title('Source wavefield decomposition')
+# plt.savefig('decomposition.pdf', bbox_inches='tight')
+
+
+# import pdb; pdb.set_trace()
+
 
 assert np.isclose(normuref, normusol, atol=1e-06)
