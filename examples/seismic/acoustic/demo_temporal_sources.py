@@ -14,7 +14,7 @@ np.set_printoptions(threshold=sys.maxsize)  # pdb print full size
 
 from devito.types.basic import Scalar, Symbol # noqa
 from mpl_toolkits.mplot3d import Axes3D # noqa
-
+import time
 
 def plot3d(data, model):
     fig = plt.figure()
@@ -55,6 +55,7 @@ model = Model(vp=v, origin=origin, shape=shape, spacing=spacing, space_order=so,
               nbl=10, bcs="damp")
 
 # plt.imshow(model.vp.data[10, :, :]) ; pause(1)
+npoints = 1
 
 t0 = 0  # Simulation starts a t=0
 tn = args.tn  # Simulation last 1 second (1000 ms)
@@ -62,20 +63,22 @@ dt = model.critical_dt  # Time step from model grid spacing
 time_range = TimeAxis(start=t0, stop=tn, step=dt)
 f0 = 0.010  # Source peak frequency is 10Hz (0.010 kHz)
 src = RickerSource(name='src', grid=model.grid, f0=f0,
-                   npoint=1, time_range=time_range)
+                   npoint=npoints, time_range=time_range)
 
 
 # First, position source centrally in all dimensions, then set depth
 
 stx = 0.1
 ste = 0.9
-stepx = (ste-stx)/int(np.sqrt(src.npoint))
+stepx = (ste-stx)/int(np.cbrt(npoints))
 
-
+# Square arrangement
 src.coordinates.data[:, :2] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,2)*np.array(model.domain_size[:1])
 
-src.coordinates.data[:, -1] = 20  # Depth is 20m
+# Cubic arrangement
+# src.coordinates.data[:, :] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,3)*np.array(model.domain_size[:1])
 
+# continusrc.coordinates.data[:, -1] = 20  # Depth is 20m
 #src.coordinates.data[0, :] = np.array(model.domain_size) * .5
 #src.coordinates.data[0, -1] = 20  # Depth is 20m
 #src.coordinates.data[1, :] = np.array(model.domain_size) * .5
@@ -91,7 +94,8 @@ f = TimeFunction(name="f", grid=model.grid, space_order=so, time_order=2)
 src_f = src.inject(field=f.forward, expr=src * dt**2 / model.m)
 # op_f = Operator([src_f], opt=('advanced', {'openmp': True}))
 op_f = Operator([src_f])
-op_f.apply(time=time_range.num-1)
+op_f_sum = op_f.apply(time=3)
+instime = op_f_sum.globals['fdlike'].time
 normf = norm(f)
 print("==========")
 print(normf)
@@ -104,7 +108,10 @@ pde_ref = model.m * uref.dt2 - uref.laplace + model.damp * uref.dt
 stencil_ref = Eq(uref.forward, solve(pde_ref, uref.forward))
 
 #Get the nonzero indices
+start = time.process_time()
 nzinds = np.nonzero(f.data[0])  # nzinds is a tuple
+instime += time.process_time() - start
+
 assert len(nzinds) == len(shape)
 
 shape = model.grid.shape
@@ -118,9 +125,9 @@ info("source_id data indexes start from 1 not 0 !!!")
 source_id.data[nzinds[0], nzinds[1], nzinds[2]] = tuple(np.arange(len(nzinds[0])))
 
 source_mask.data[nzinds[0], nzinds[1], nzinds[2]] = 1
-# plot3d(source_mask.data, model)
+plot3d(source_mask.data, model)
 
-info("Number of unique affected points is: %d", len(nzinds[0])+1)
+info("Number of unique affected points is: %d", len(nzinds[0]))
 
 # Assert that first and last index are as expected
 assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
@@ -158,14 +165,13 @@ save_src = TimeFunction(name='save_src', shape=(src.shape[0],
 save_src_term = src.inject(field=save_src[src.dimensions[0], source_id], expr=src * dt**2 / model.m)
 
 op1 = Operator([save_src_term])
-op1.apply(time=time_range.num-1)
 
+op1_sum = op1.apply(time=time_range.num-1)
+instime += op1_sum.globals['fdlike'].time
 
 usol = TimeFunction(name="usol", grid=model.grid, space_order=so, time_order=2)
 
 sp_zi = Dimension(name='sp_zi')
-
-# import pdb; pdb.set_trace()
 
 sp_source_mask = Function(name='sp_source_mask', shape=(list(sparse_shape)), dimensions=(x, y, sp_zi), space_order=0, dtype=np.int32)
 
@@ -193,7 +199,6 @@ eq2 = Inc(usol.forward[t+1, x, y, zind], myexpr, implicit_dims=(time, x, y, sp_z
 pde_2 = model.m * usol.dt2 - usol.laplace + model.damp * usol.dt
 stencil_2 = Eq(usol.forward, solve(pde_2, usol.forward))
 
-
 block_sizes = Function(name='block_sizes', shape=(4, ), dimensions=(b_dim,), space_order=0, dtype=np.int32)
 
 # import pdb; pdb.set_trace()
@@ -211,7 +216,7 @@ eqyb2 = Eq(y0_blk0_size, block_sizes[3])
 
 opref = Operator([stencil_ref, src_term_ref], opt=('advanced', {'openmp': True}))
 print("===Space blocking==")
-configuration['autotuning']='aggressive'
+configuration['autotuning']='off'
 opref.apply(time=time_range.num-2, dt=model.critical_dt)
 configuration['autotuning']='off'
 print("===========")
@@ -250,3 +255,5 @@ print("Norm(uref):", normuref)
 #plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
 
 assert np.isclose(normuref, normusol, atol=1e-06)
+
+print("total inspection cost time: " , instime)
