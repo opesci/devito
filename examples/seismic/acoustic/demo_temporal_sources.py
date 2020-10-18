@@ -16,6 +16,8 @@ from devito.types.basic import Scalar, Symbol # noqa
 from mpl_toolkits.mplot3d import Axes3D # noqa
 import time
 
+configuration['jit-backdoor'] = False
+
 def plot3d(data, model):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -95,7 +97,7 @@ src_f = src.inject(field=f.forward, expr=src * dt**2 / model.m)
 # op_f = Operator([src_f], opt=('advanced', {'openmp': True}))
 op_f = Operator([src_f])
 op_f_sum = op_f.apply(time=3)
-instime = op_f_sum.globals['fdlike'].time
+# instime = op_f_sum.globals['fdlike'].time
 normf = norm(f)
 print("==========")
 print(normf)
@@ -108,9 +110,9 @@ pde_ref = model.m * uref.dt2 - uref.laplace + model.damp * uref.dt
 stencil_ref = Eq(uref.forward, solve(pde_ref, uref.forward))
 
 #Get the nonzero indices
-start = time.process_time()
+#start = time.process_time()
 nzinds = np.nonzero(f.data[0])  # nzinds is a tuple
-instime += time.process_time() - start
+#instime += time.process_time() - start
 
 assert len(nzinds) == len(shape)
 
@@ -125,18 +127,18 @@ info("source_id data indexes start from 1 not 0 !!!")
 source_id.data[nzinds[0], nzinds[1], nzinds[2]] = tuple(np.arange(len(nzinds[0])))
 
 source_mask.data[nzinds[0], nzinds[1], nzinds[2]] = 1
-plot3d(source_mask.data, model)
+# plot3d(source_mask.data, model)
 
 info("Number of unique affected points is: %d", len(nzinds[0]))
 
 # Assert that first and last index are as expected
-assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
-assert(source_id.data[nzinds[0][-1], nzinds[1][-1], nzinds[2][-1]] == len(nzinds[0])-1)
-assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1],
-       nzinds[2][len(nzinds[0])-1]] == len(nzinds[0])-1)
+# assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
+# assert(source_id.data[nzinds[0][-1], nzinds[1][-1], nzinds[2][-1]] == len(nzinds[0])-1)
+#assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1],
+#       nzinds[2][len(nzinds[0])-1]] == len(nzinds[0])-1)
 
-assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(source_mask.data)))
-assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(f.data[0])))
+# assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(source_mask.data)))
+# assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(f.data[0])))
 
 info("-At this point source_mask and source_id have been popoulated correctly-")
 
@@ -167,7 +169,7 @@ save_src_term = src.inject(field=save_src[src.dimensions[0], source_id], expr=sr
 op1 = Operator([save_src_term])
 
 op1_sum = op1.apply(time=time_range.num-1)
-instime += op1_sum.globals['fdlike'].time
+#instime += op1_sum.globals['fdlike'].time
 
 usol = TimeFunction(name="usol", grid=model.grid, space_order=so, time_order=2)
 
@@ -178,8 +180,8 @@ sp_source_mask = Function(name='sp_source_mask', shape=(list(sparse_shape)), dim
 # Now holds IDs
 sp_source_mask.data[inds[0], inds[1], :] = tuple(inds[2][:len(np.unique(inds[2]))])
 
-assert(np.count_nonzero(sp_source_mask.data) == len(nzinds[0]))
-assert(len(sp_source_mask.dimensions) == 3)
+#assert(np.count_nonzero(sp_source_mask.data) == len(nzinds[0]))
+#assert(len(sp_source_mask.dimensions) == 3)
 
 t = model.grid.stepping_dim
 
@@ -254,6 +256,6 @@ print("Norm(uref):", normuref)
 # Uncomment to plot a slice of the field
 #plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
 
-assert np.isclose(normuref, normusol, atol=1e-06)
+# assert np.isclose(normuref, normusol, atol=1e-06)
 
-print("total inspection cost time: " , instime)
+#print("total inspection cost time: " , instime)

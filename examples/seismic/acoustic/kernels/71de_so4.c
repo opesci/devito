@@ -2,7 +2,6 @@
 #include "stdlib.h"
 #include "math.h"
 #include "sys/time.h"
-#include "ittnotify.h"
 #include "xmmintrin.h"
 #include "pmmintrin.h"
 #include <stdio.h>
@@ -21,6 +20,11 @@ struct dataobj
   int *oofs;
 };
 
+struct profiler
+{
+  double section0;
+};
+
 int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict damp_vec, const float dt, const float h_x, const float h_y, const float h_z, struct dataobj *restrict nnz_sp_source_mask_vec, struct dataobj *restrict save_src_vec, struct dataobj *restrict source_id_vec, struct dataobj *restrict source_mask_vec, struct dataobj *restrict sp_source_mask_vec, struct dataobj *restrict usol_vec, struct dataobj *restrict vp_vec, const int sp_zi_m, const int time_M, const int time_m, struct profiler *timers, const int x_M, const int x_m, const int y_M, const int y_m, const int z_M, const int z_m, const int nthreads)
 {
   int (*restrict block_sizes) __attribute__ ((aligned (64))) = (int (*)) block_sizes_vec->data;
@@ -36,7 +40,6 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   /* Flush denormal numbers to zero in hardware */
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-  __itt_resume();
   int xb_size = block_sizes[0];
   int y0_blk0_size = block_sizes[3];
   int x0_blk0_size = block_sizes[2];
@@ -46,6 +49,8 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   int sf = 2;
   int t_blk_size = 2 * sf * (time_M - time_m);
 
+  struct timeval start_section0, end_section0;
+  gettimeofday(&start_section0, NULL);
   for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += sf * t_blk_size) // for each t block
   {
     for (int xb = x_m; xb <= (x_M + sf * (time_M - time_m)); xb += xb_size + 1)
@@ -91,7 +96,9 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
       }
     }
   }
-  /* End sectiom*/
-  __itt_pause();
+  /* End section0 */
+  gettimeofday(&end_section0, NULL);
+  timers->section0 += (double)(end_section0.tv_sec - start_section0.tv_sec) + (double)(end_section0.tv_usec - start_section0.tv_usec) / 1000000;
+
   return 0;
 }
