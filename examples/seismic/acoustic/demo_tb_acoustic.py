@@ -16,17 +16,7 @@ from devito.types.basic import Scalar, Symbol # noqa
 from mpl_toolkits.mplot3d import Axes3D # noqa
 import time
 
-configuration['jit-backdoor'] = False
-
-def plot3d(data, model):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    z, x, y = data.nonzero()
-    ax.scatter(x, y, z, zdir='y', c='red', s=20, marker='.')
-    ax.set_xlim(model.spacing[0], data.shape[0]-model.spacing[0])
-    ax.set_ylim(model.spacing[1], data.shape[1]-model.spacing[1])
-    ax.set_zlim(model.spacing[2], data.shape[2]-model.spacing[2])
-    plt.savefig("sources_demo.pdf")
+# configuration['jit-backdoor'] = False
 
 parser = argparse.ArgumentParser(description='Process arguments.')
 
@@ -43,7 +33,7 @@ args = parser.parse_args()
 
 nx, ny, nz = args.shape
 # Define a physical size
-shape = (nx, ny, nz)  # Number of grid point (nx, nz)
+shape = (nx, ny, nz)  # Number of grid point (nx, ny, nz)
 spacing = (10., 10., 10)  # Grid spacing in m. The domain size is now 1km by 1km
 origin = (0., 0., 0.)
 so = args.space_order
@@ -56,8 +46,7 @@ v[:, :, int(nz/2):] = 1
 model = Model(vp=v, origin=origin, shape=shape, spacing=spacing, space_order=so,
               nbl=10, bcs="damp")
 
-# plt.imshow(model.vp.data[10, :, :]) ; pause(1)
-npoints = 1
+nsrc = 1
 
 t0 = 0  # Simulation starts a t=0
 tn = args.tn  # Simulation last 1 second (1000 ms)
@@ -65,11 +54,10 @@ dt = model.critical_dt  # Time step from model grid spacing
 time_range = TimeAxis(start=t0, stop=tn, step=dt)
 f0 = 0.010  # Source peak frequency is 10Hz (0.010 kHz)
 src = RickerSource(name='src', grid=model.grid, f0=f0,
-                   npoint=npoints, time_range=time_range)
+                   npoint=nsrc, time_range=time_range)
 
 
 # First, position source centrally in all dimensions, then set depth
-
 stx = 0.1
 ste = 0.9
 stepx = (ste-stx)/int(np.cbrt(npoints))
@@ -77,31 +65,26 @@ stepx = (ste-stx)/int(np.cbrt(npoints))
 # Square arrangement
 src.coordinates.data[:, :2] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,2)*np.array(model.domain_size[:1])
 
-# Cubic arrangement
+# Cubic arrangement (for dense injection experiment)
 # src.coordinates.data[:, :] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,3)*np.array(model.domain_size[:1])
 
-# continusrc.coordinates.data[:, -1] = 20  # Depth is 20m
-#src.coordinates.data[0, :] = np.array(model.domain_size) * .5
-#src.coordinates.data[0, -1] = 20  # Depth is 20m
-#src.coordinates.data[1, :] = np.array(model.domain_size) * .5
-#src.coordinates.data[1, -1] = 20  # Depth is 20m
-#src.coordinates.data[2, :] = np.array(model.domain_size) * .5
-#src.coordinates.data[2, -1] = 20  # Depth is 20m
+# src.coordinates.data[:, -1] = 20  # Depth is 20m
+# src.coordinates.data[0, :] = np.array(model.domain_size) * .5
+# src.coordinates.data[0, -1] = 20  # Depth is 20m
+# src.coordinates.data[1, :] = np.array(model.domain_size) * .5
+# src.coordinates.data[1, -1] = 20  # Depth is 20m
+# src.coordinates.data[2, :] = np.array(model.domain_size) * .5
+# src.coordinates.data[2, -1] = 20  # Depth is 20m
 
-#src.show()
-#pause(1)
-
-# f : perform source injection on an empty grid
+# Step : perform source injection in an empty grid
 f = TimeFunction(name="f", grid=model.grid, space_order=so, time_order=2)
 src_f = src.inject(field=f.forward, expr=src * dt**2 / model.m)
-# op_f = Operator([src_f], opt=('advanced', {'openmp': True}))
 op_f = Operator([src_f])
-op_f_sum = op_f.apply(time=3)
+op_f_sum = op_f.apply(time=3) # Number of timesteps depending on whether we have zeros or not
 # instime = op_f_sum.globals['fdlike'].time
 normf = norm(f)
 print("==========")
-print(normf)
-print("===========")
+print("Empty grid injection norm is:", normf)
 
 # uref : reference solution
 uref = TimeFunction(name="uref", grid=model.grid, space_order=so, time_order=2)
@@ -123,7 +106,6 @@ source_mask = Function(name='source_mask', shape=shape, dimensions=(x, y, z), sp
 source_id = Function(name='source_id', shape=shape, dimensions=(x, y, z), space_order=0, dtype=np.int32)
 info("source_id data indexes start from 1 not 0 !!!")
 
-# source_id.data[nzinds[0], nzinds[1], nzinds[2]] = tuple(np.arange(1, len(nzinds[0])+1))
 source_id.data[nzinds[0], nzinds[1], nzinds[2]] = tuple(np.arange(len(nzinds[0])))
 
 source_mask.data[nzinds[0], nzinds[1], nzinds[2]] = 1
@@ -132,15 +114,15 @@ source_mask.data[nzinds[0], nzinds[1], nzinds[2]] = 1
 info("Number of unique affected points is: %d", len(nzinds[0]))
 
 # Assert that first and last index are as expected
-# assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
-# assert(source_id.data[nzinds[0][-1], nzinds[1][-1], nzinds[2][-1]] == len(nzinds[0])-1)
-#assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1],
-#       nzinds[2][len(nzinds[0])-1]] == len(nzinds[0])-1)
+assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
+assert(source_id.data[nzinds[0][-1], nzinds[1][-1], nzinds[2][-1]] == len(nzinds[0])-1)
+assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1],
+       nzinds[2][len(nzinds[0])-1]] == len(nzinds[0])-1)
 
-# assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(source_mask.data)))
-# assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(f.data[0])))
+assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(source_mask.data)))
+assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(f.data[0])))
 
-info("-At this point source_mask and source_id have been popoulated correctly-")
+info("-At this point source_mask and source_id have been populated correctly-")
 
 nnz_shape = (model.grid.shape[0], model.grid.shape[1])  # Change only 3rd dim
 
@@ -169,19 +151,18 @@ save_src_term = src.inject(field=save_src[src.dimensions[0], source_id], expr=sr
 op1 = Operator([save_src_term])
 
 op1_sum = op1.apply(time=time_range.num-1)
-#instime += op1_sum.globals['fdlike'].time
+# instime += op1_sum.globals['fdlike'].time
 
 usol = TimeFunction(name="usol", grid=model.grid, space_order=so, time_order=2)
 
 sp_zi = Dimension(name='sp_zi')
-
 sp_source_mask = Function(name='sp_source_mask', shape=(list(sparse_shape)), dimensions=(x, y, sp_zi), space_order=0, dtype=np.int32)
 
 # Now holds IDs
 sp_source_mask.data[inds[0], inds[1], :] = tuple(inds[2][:len(np.unique(inds[2]))])
 
-#assert(np.count_nonzero(sp_source_mask.data) == len(nzinds[0]))
-#assert(len(sp_source_mask.dimensions) == 3)
+assert(np.count_nonzero(sp_source_mask.data) == len(nzinds[0]))
+assert(len(sp_source_mask.dimensions) == 3)
 
 t = model.grid.stepping_dim
 
@@ -218,6 +199,7 @@ eqyb2 = Eq(y0_blk0_size, block_sizes[3])
 
 opref = Operator([stencil_ref, src_term_ref], opt=('advanced', {'openmp': True}))
 print("===Space blocking==")
+# Turn autotuning on for better performance
 configuration['autotuning']='off'
 opref.apply(time=time_range.num-2, dt=model.critical_dt)
 configuration['autotuning']='off'
@@ -232,7 +214,7 @@ print("===========")
 print("-----")
 op2 = Operator([eqxb, eqyb, eqxb2, eqyb2, stencil_2, eq0, eq1, eq2], eqxb=32, opt=('advanced'))
 # print(op2.ccode)
-print("===Temporal blocking======================================")
+print("===Temporal blocking=====")
 op2.apply(time=time_range.num-1, dt=model.critical_dt)
 print("===========")
 
@@ -246,16 +228,10 @@ print("Norm(f):", normf)
 print("Norm(usol):", normusol)
 print("Norm(uref):", normuref)
 
-# save_src.data[0, source_id.data[14, 14, 11]]
-# save_src.data[0 ,source_id.data[14, 14, sp_source_mask.data[14, 14, 0]]]
-
-#plt.imshow(uref.data[2, int(nx/2) ,:, :]); pause(1)
-#plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
-
-
 # Uncomment to plot a slice of the field
-#plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(uref.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
+# plt.imshow(usol.data[2, int(nx/2) ,:, :]); pause(1)
 
-# assert np.isclose(normuref, normusol, atol=1e-06)
-
-#print("total inspection cost time: " , instime)
+assert np.isclose(normuref, normusol, atol=1e-06)
+# print("Total inspection cost time: ", instime)
