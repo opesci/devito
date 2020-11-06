@@ -60,7 +60,7 @@ src = RickerSource(name='src', grid=model.grid, f0=f0,
 # First, position source centrally in all dimensions, then set depth
 stx = 0.1
 ste = 0.9
-stepx = (ste-stx)/int(np.cbrt(npoints))
+stepx = (ste-stx)/int(np.cbrt(nsrc))
 
 # Square arrangement
 src.coordinates.data[:, :2] = np.array(np.meshgrid(np.arange(stx, ste, stepx), np.arange(stx, ste, stepx))).T.reshape(-1,2)*np.array(model.domain_size[:1])
