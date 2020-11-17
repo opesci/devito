@@ -124,19 +124,27 @@ def ForwardOperator(model, geometry, space_order=4,
     src = PointSource(name='src', grid=geometry.grid, time_range=geometry.time_axis,
                       npoint=geometry.nsrc)
 
-    rec = Receiver(name='rec', grid=geometry.grid, time_range=geometry.time_axis,
-                   npoint=geometry.nrec)
+    # rec = Receiver(name='rec', grid=geometry.grid, time_range=geometry.time_axis,
+    #                npoint=geometry.nrec)
 
     s = model.grid.stepping_dim.spacing
     eqn = iso_stencil(u, model, kernel)
 
+    tt_stencils = kwargs['tteqs']
+
+    if tt_stencils:
+        eqn += tt_stencils
+        return Operator(eqn, subs=model.spacing_map,
+                        name='Kernel', **kwargs)
     # Construct expression to inject source values
     src_term = src.inject(field=u.forward, expr=src * s**2 / m)
 
     # Create interpolation expression for receivers
-    rec_term = rec.interpolate(expr=u)
+    # rec_term = rec.interpolate(expr=u)
     # Substitute spacing terms to reduce flops
-    return Operator(eqn + src_term + rec_term, subs=model.spacing_map,
+    # return Operator(eqn + src_term + rec_term, subs=model.spacing_map,
+    #                 name='Forward', **kwargs)
+    return Operator(eqn + src_term, subs=model.spacing_map,
                     name='Forward', **kwargs)
 
 

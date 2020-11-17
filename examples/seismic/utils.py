@@ -25,7 +25,7 @@ def setup_geometry(model, tn, f0=0.010):
 
 
 def setup_rec_coords(model):
-    nrecx = 0 #model.shape[0]
+    nrecx = model.shape[0]
     recx = np.linspace(model.origin[0], model.domain_size[0], nrecx)
 
     if model.dim == 1:
