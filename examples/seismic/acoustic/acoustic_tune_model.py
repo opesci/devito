@@ -115,7 +115,7 @@ info("Number of unique affected points is: %d", len(nzinds[0])+1)
 # Assert that first and last index are as expected
 assert(source_id.data[nzinds[0][0], nzinds[1][0], nzinds[2][0]] == 0)
 assert(source_id.data[nzinds[0][-1], nzinds[1][-1], nzinds[2][-1]] == len(nzinds[0])-1)
-assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1],
+assert(source_id.data[nzinds[0][len(nzinds[0])-1], nzinds[1][len(nzinds[0])-1], 
        nzinds[2][len(nzinds[0])-1]] == len(nzinds[0])-1)
 
 assert(np.all(np.nonzero(source_id.data)) == np.all(np.nonzero(source_mask.data)))
@@ -129,11 +129,12 @@ nnz_sp_source_mask = Function(name='nnz_sp_source_mask', shape=(list(nnz_shape))
 
 nnz_sp_source_mask.data[:, :] = source_mask.data[:, :, :].sum(2)
 inds = np.where(source_mask.data == 1.)
+print("Grid - source positions:", inds)
+maxz = len(np.unique(inds[-1]))
+# Change only 3rd dim
+sparse_shape = (model.grid.shape[0], model.grid.shape[1], maxz)
 
-maxz = len(np.unique(inds[2]))
-sparse_shape = (model.grid.shape[0], model.grid.shape[1], maxz)  # Change only 3rd dim
-
-assert(len(nnz_sp_source_mask.dimensions) == 2)
+assert(len(nnz_sp_source_mask.dimensions) == (len(source_mask.dimensions)-1))
 
 # Note:sparse_source_id is not needed as long as sparse info is kept in mask
 # sp_source_id.data[inds[0],inds[1],:] = inds[2][:maxz]

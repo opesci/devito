@@ -144,6 +144,7 @@ def ForwardOperator(model, geometry, space_order=4,
     # Substitute spacing terms to reduce flops
     # return Operator(eqn + src_term + rec_term, subs=model.spacing_map,
     #                 name='Forward', **kwargs)
+    print(src_term)
     return Operator(eqn + src_term, subs=model.spacing_map,
                     name='Forward', **kwargs)
 

@@ -47,10 +47,11 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   /* Flush denormal numbers to zero in hardware */
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-  int xb_size = block_sizes[0];
-  int y0_blk0_size = block_sizes[3];
-  int x0_blk0_size = block_sizes[2];
+   int xb_size = block_sizes[0];
   int yb_size = block_sizes[1];
+  int x0_blk0_size = block_sizes[2];
+  int y0_blk0_size = block_sizes[3];
+
   printf(" Tiles: %d, %d ::: Blocks %d, %d \n", xb_size, yb_size, x0_blk0_size, y0_blk0_size);
 
   //for (int time = time_m, t0 = (time + 2)%(3), t1 = (time)%(3), t2 = (time + 1)%(3); time <= time_M; time += 1, t0 = (time + 2)%(3), t1 = (time)%(3), t2 = (time + 1)%(3))
@@ -59,13 +60,14 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   int t_blk_size = 2 * sf * (time_M - time_m);
 
   START_TIMER(section0)
+
   for (int t_blk = time_m; t_blk < sf * (time_M - time_m); t_blk += sf * t_blk_size) // for each t block
   {
     for (int xb = x_m; xb <= (x_M + sf * (time_M - time_m)); xb += xb_size + 1)
     {
       for (int yb = y_m; yb <= (y_M + sf * (time_M - time_m)); yb += yb_size + 1)
       {
-        for (int time = t_blk, t0 = (time + 2) % (3), t1 = (time) % (3), t2 = (time + 1) % (3); time <= 1 + min(t_blk + t_blk_size - 1, sf * (time_M - time_m)); time += sf, t0 = (((time / sf) % (time_M - time_m + 1)) + 2) % (3), t1 = (((time / sf) % (time_M - time_m + 1))) % (3), t2 = (((time / sf) % (time_M - time_m + 1)) + 1) % (3))
+        for (int time = t_blk, t1 = (time + 2) % (3), t0 = (time) % (3), t2 = (time + 1) % (3); time <= 1 + min(t_blk + t_blk_size - 1, sf * (time_M - time_m)); time += sf, t1 = (((time / sf) % (time_M - time_m + 1)) + 2) % (3), t0 = (((time / sf) % (time_M - time_m + 1))) % (3), t2 = (((time / sf) % (time_M - time_m + 1)) + 1) % (3))
         {
           int tw = ((time / sf) % (time_M - time_m + 1));
           bf0(damp_vec, dt, u_vec, vp_vec, nnz_sp_source_mask_vec, sp_source_mask_vec, save_src_u_vec, source_id_vec, source_mask_vec, t0, t1, t2, x0_blk0_size, x_M - (x_M - x_m + 1) % (x0_blk0_size), x_m, y0_blk0_size, y_M - (y_M - y_m + 1) % (y0_blk0_size), y_m, z_M, z_m, sp_zi_m, nthreads, xb, yb, xb_size, yb_size, time, tw);
@@ -78,17 +80,19 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
     }
 
     /* End section0 */
-  }
-  STOP_TIMER(section0, timers)
+    STOP_TIMER(section0, timers)
 
-  for (int time = time_m, t2 = (time + 1) % (3); time <= time_M; time += 1, t2 = (time + 1) % (3))
+  }
+
+  for (int time = time_m, t0 = (time + 1) % (3); time <= time_M; time += 1, t0 = (time + 1) % (3))
   {
-    START_TIMER(section1)
     /* Begin section1 */
+    START_TIMER(section1)
 
-    /* End section1 */
     STOP_TIMER(section1, timers)
+    /* End section1 */
   }
+
   return 0;
 }
 
@@ -132,7 +136,6 @@ void bf0(struct dataobj *restrict damp_vec, const float dt, struct dataobj *rest
             {
               int zind = sp_source_mask[x - time][y - time][sp_zi];
               float r0 = save_src_u[tw][source_id[x - time][y - time][zind]] * source_mask[x - time][y - time][zind];
-              printf("\n Addition is %f", r0);
               u[t2][x - time + 4][y - time + 4][zind + 4] += r0;
             }
           }

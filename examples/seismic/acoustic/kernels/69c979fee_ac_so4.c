@@ -41,9 +41,11 @@ int Kernel(struct dataobj *restrict block_sizes_vec, struct dataobj *restrict da
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
   int xb_size = block_sizes[0];
-  int y0_blk0_size = block_sizes[3];
-  int x0_blk0_size = block_sizes[2];
   int yb_size = block_sizes[1];
+  int x0_blk0_size = block_sizes[2];
+  int y0_blk0_size = block_sizes[3];
+
+
   printf(" Tiles: %d, %d ::: Blocks %d, %d \n", xb_size, yb_size, x0_blk0_size, y0_blk0_size);
 
   //for (int time = time_m, t0 = (time + 2)%(3), t1 = (time)%(3), t2 = (time + 1)%(3); time <= time_M; time += 1, t0 = (time + 2)%(3), t1 = (time)%(3), t2 = (time + 1)%(3))

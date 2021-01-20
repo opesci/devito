@@ -144,7 +144,7 @@ class AcousticWaveSolver(object):
         op_f = Operator([src_u])
         op_f.apply(src=src, dt=kwargs.pop('dt', self.dt))
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         print("Norm s_u", norm(s_u))
 
         # Get the nonzero indices
@@ -198,15 +198,10 @@ class AcousticWaveSolver(object):
         b_dim = Dimension(name='b_dim')
 
         save_src_u = TimeFunction(name='save_src_u', shape=(src.shape[0],
-                                  nzinds[1].shape[0]), time_order=2, dimensions=(src.dimensions[0],
+                                  nzinds[1].shape[0]), dimensions=(src.dimensions[0],
                                   id_dim))
-        #save_src_v = TimeFunction(name='save_src_v', shape=(src.shape[0],
-        #                          nzinds[1].shape[0]), dimensions=(src.dimensions[0],
-        #                          id_dim))
 
         save_src_u_term = src.inject(field=save_src_u[src.dimensions[0], source_id], expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
-        #save_src_v_term = src.inject(field=save_src_v[src.dimensions[0], source_id],
-        #                             expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
 
         print("Injecting to empty grids")
         op1 = Operator([save_src_u_term])
@@ -285,7 +280,6 @@ class AcousticWaveSolver(object):
                         eqyb2 = Eq(y0_blk0_size, block_sizes[3])
 
                         u.data[:] = 0
-                        # v.data[:] = 0
                         print("-----")
                         tteqs = (eqxb, eqyb, eqxb2, eqyb2, eq0, eq1, eq_u)
 
