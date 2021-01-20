@@ -123,7 +123,7 @@ class AcousticWaveSolver(object):
         
 
         regnormu = norm(u)
-        if 1:
+        if 0:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
@@ -209,7 +209,7 @@ class AcousticWaveSolver(object):
         print("Injecting to empty grids finished")
         sp_zi = Dimension(name='sp_zi')
 
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
 
         sp_source_mask = Function(name='sp_source_mask', shape=(list(sparse_shape)),
                                   dimensions=(x, y, sp_zi), space_order=0, dtype=np.int32)
@@ -254,10 +254,10 @@ class AcousticWaveSolver(object):
         performance_map = np.array([[0, 0, 0, 0, 0]])
 
         bxstart = 8
-        bxend = 17
+        bxend = 9
         bystart = 8
-        byend = 17
-        bstep = 16
+        byend = 9
+        bstep = 8
 
         txstart = 32
         txend = 33
@@ -337,7 +337,7 @@ class AcousticWaveSolver(object):
                 plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty)) + ".pdf")
 
 
-        if 1:
+        if 0:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
@@ -349,7 +349,7 @@ class AcousticWaveSolver(object):
             vistagrid.plot(show_edges=True)
             vistaslices.plot(cmap=cmap)
 
-        import pdb;pdb.set_trace()
+        # import pdb;pdb.set_trace()
         return rec, u, summary
 
     def adjoint(self, rec, srca=None, v=None, vp=None, **kwargs):

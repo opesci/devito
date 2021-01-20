@@ -132,7 +132,6 @@ void bf0(struct dataobj *restrict damp_vec, const float dt, struct dataobj *rest
             {
               int zind = sp_source_mask[x - time][y - time][sp_zi];
               float r0 = save_src_u[tw][source_id[x - time][y - time][zind]] * source_mask[x - time][y - time][zind];
-              printf("\n Addition is %f", r0);
               u[t2][x - time + 4][y - time + 4][zind + 4] += r0;
             }
           }
