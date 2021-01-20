@@ -195,14 +195,14 @@ bxstart = 8
 bxend = 33
 bystart = 8
 byend = 33
-bstep = 8
+bstep = 32
 
 txstart = 16
 txend = 33
 tystart = 16
 tyend = 33
 
-tstep = 16
+tstep = 8
 
 # Temporal autotuning
 for tx in range(txstart, txend, tstep):
