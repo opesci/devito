@@ -552,7 +552,7 @@ class FindSymbols(Visitor):
         as we can. A devito.Indexed has its own overridden __str__, which
         relies on memoization, which is acceptable.
         """
-        return (str(o) if o.is_Indexed else o.name, type(o))
+        return (str(o) if o.is_Indexed else o.name)
 
     class Retval(list):
         def __init__(self, *retvals, node=None):

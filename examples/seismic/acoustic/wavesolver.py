@@ -114,13 +114,16 @@ class AcousticWaveSolver(object):
         # Pick vp from model unless explicitly provided
         vp = vp or self.model.vp
 
+        print("====Forward norm(u)", norm(u))
         # Execute operator and return wavefield and receiver data
         # summary = self.op_fwd(save).apply(src=src, rec=rec, u=u, vp=vp,
         summary = self.op_fwd(save).apply(src=src, u=u, vp=vp,
                                           dt=kwargs.pop('dt', self.dt), **kwargs)
+        print("====Forward norm(u)", norm(u))
+        
 
         regnormu = norm(u)
-        if 0:
+        if 1:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
@@ -134,13 +137,14 @@ class AcousticWaveSolver(object):
 
         print("Norm u:", regnormu)
 
-        s_u = TimeFunction(name='s_u', grid=self.model.grid, space_order=self.space_order, time_order=1)
+        s_u = TimeFunction(name='s_u', grid=self.model.grid, space_order=self.space_order, time_order=2)
         src_u = src.inject(field=s_u.forward, expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
 
 
         op_f = Operator([src_u])
         op_f.apply(src=src, dt=kwargs.pop('dt', self.dt))
 
+        import pdb;pdb.set_trace()
         print("Norm s_u", norm(s_u))
 
         # Get the nonzero indices
@@ -194,22 +198,23 @@ class AcousticWaveSolver(object):
         b_dim = Dimension(name='b_dim')
 
         save_src_u = TimeFunction(name='save_src_u', shape=(src.shape[0],
-                                  nzinds[1].shape[0]), dimensions=(src.dimensions[0],
+                                  nzinds[1].shape[0]), time_order=2, dimensions=(src.dimensions[0],
                                   id_dim))
-        save_src_v = TimeFunction(name='save_src_v', shape=(src.shape[0],
-                                  nzinds[1].shape[0]), dimensions=(src.dimensions[0],
-                                  id_dim))
+        #save_src_v = TimeFunction(name='save_src_v', shape=(src.shape[0],
+        #                          nzinds[1].shape[0]), dimensions=(src.dimensions[0],
+        #                          id_dim))
 
-        save_src_u_term = src.inject(field=save_src_u[src.dimensions[0], source_id],
-                                     expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
-        save_src_v_term = src.inject(field=save_src_v[src.dimensions[0], source_id],
-                                     expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
+        save_src_u_term = src.inject(field=save_src_u[src.dimensions[0], source_id], expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
+        #save_src_v_term = src.inject(field=save_src_v[src.dimensions[0], source_id],
+        #                             expr=src * self.model.grid.time_dim.spacing**2 / self.model.m)
 
         print("Injecting to empty grids")
-        op1 = Operator([save_src_u_term, save_src_v_term])
+        op1 = Operator([save_src_u_term])
         op1.apply(src=src, dt=kwargs.pop('dt', self.dt))
         print("Injecting to empty grids finished")
         sp_zi = Dimension(name='sp_zi')
+
+        import pdb;pdb.set_trace()
 
         sp_source_mask = Function(name='sp_source_mask', shape=(list(sparse_shape)),
                                   dimensions=(x, y, sp_zi), space_order=0, dtype=np.int32)
@@ -287,9 +292,10 @@ class AcousticWaveSolver(object):
                         # import pdb; pdb.set_trace()
 
                         # Execute operator and return wavefield and receiver data
+                        print("TT====Forward norm(u)", norm(u))
                         summary_tt = self.op_fwd(save, tteqs).apply(u=u, vp=vp,
                                           dt=kwargs.pop('dt', self.dt), **kwargs)
-
+                        print("TT====Forward norm(u)", norm(u))
                         # op_tt = self.op_fwd(save, tteqs)
 
                         # Execute operator and return wavefield and receiver data
@@ -337,7 +343,7 @@ class AcousticWaveSolver(object):
                 plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty)) + ".pdf")
 
 
-        if 0:
+        if 1:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
@@ -349,7 +355,7 @@ class AcousticWaveSolver(object):
             vistagrid.plot(show_edges=True)
             vistaslices.plot(cmap=cmap)
 
-
+        import pdb;pdb.set_trace()
         return rec, u, summary
 
     def adjoint(self, rec, srca=None, v=None, vp=None, **kwargs):
