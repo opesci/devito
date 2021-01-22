@@ -253,18 +253,18 @@ class AcousticWaveSolver(object):
 
         performance_map = np.array([[0, 0, 0, 0, 0]])
 
-        bxstart = 8
-        bxend = 9
-        bystart = 8
-        byend = 9
-        bstep = 8
+        bxstart = 4
+        bxend = 11
+        bystart = 4
+        byend = 11
+        bstep = 4
 
         txstart = 32
-        txend = 33
+        txend = 65
         tystart = 32
-        tyend = 33
+        tyend = 65
 
-        tstep = 16
+        tstep = 32
         # Temporal autotuning
         for tx in range(txstart, txend, tstep):
             # import pdb; pdb.set_trace()
@@ -306,9 +306,8 @@ class AcousticWaveSolver(object):
 
                         print("===Temporal blocking======================================")
 
-                        performance_map = np.append(performance_map, [[tx, ty, bx, by, summary_tt.globals['fdlike'].gflopss]], 0)
-
-
+                        performance_map = np.append(performance_map, [[tx, ty, bx, by, summary_tt.globals['fdlike'].gpointss]], 0)
+                        
                 print(performance_map)
                 # tids = np.unique(performance_map[:, 0])
 
@@ -320,8 +319,7 @@ class AcousticWaveSolver(object):
                 gptss_data = gptss_data.reshape(len(bx_data), len(by_data))
 
                 fig, ax = plt.subplots()
-                im = ax.imshow(gptss_data); pause(2)
-
+                im = ax.imshow(gptss_data); #pause(2)
                 # We want to show all ticks...
                 ax.set_xticks(np.arange(len(bx_data)))
                 ax.set_yticks(np.arange(len(by_data)))
