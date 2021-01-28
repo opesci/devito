@@ -254,15 +254,15 @@ class AcousticWaveSolver(object):
         performance_map = np.array([[0, 0, 0, 0, 0]])
 
         bxstart = 4
-        bxend = 11
+        bxend = 8
         bystart = 4
-        byend = 11
+        byend = 8
         bstep = 4
 
         txstart = 32
-        txend = 65
+        txend = 33
         tystart = 32
-        tyend = 65
+        tyend = 33
 
         tstep = 32
         # Temporal autotuning
@@ -335,7 +335,7 @@ class AcousticWaveSolver(object):
                 plt.savefig(str(shape[0]) + str(np.int32(tx)) + str(np.int32(ty)) + ".pdf")
 
 
-        if 0:
+        if 1:
             cmap = plt.cm.get_cmap("viridis")
             values = u.data[0, :, :, :]
             vistagrid = pv.UniformGrid()
